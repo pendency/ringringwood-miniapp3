@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>创建TabBar图标</title>
+</head>
+<body>
+    <canvas id="canvas" width="81" height="81"></canvas>
+    
+    <script>
+        // 创建简单的图标
+        function createIcon(text, color, filename) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清除画布
+            ctx.clearRect(0, 0, 81, 81);
+            
+            // 设置背景
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, 81, 81);
+            
+            // 设置文字
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 40.5, 40.5);
+            
+            // 转换为图片并下载
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        // 创建所有图标
+        setTimeout(() => {
+            createIcon('首', '#8B5A2B', 'home.jpg');
+        }, 100);
+        
+        setTimeout(() => {
+            createIcon('首', '#D4B08C', 'home-active.jpg');
+        }, 200);
+        
+        setTimeout(() => {
+            createIcon('分', '#8B5A2B', 'category.jpg');
+        }, 300);
+        
+        setTimeout(() => {
+            createIcon('分', '#D4B08C', 'category-active.jpg');
+        }, 400);
+        
+        setTimeout(() => {
+            createIcon('藏', '#8B5A2B', 'favorite.jpg');
+        }, 500);
+        
+        setTimeout(() => {
+            createIcon('藏', '#D4B08C', 'favorite-active.jpg');
+        }, 600);
+        
+        setTimeout(() => {
+            createIcon('购', '#8B5A2B', 'contact.jpg');
+        }, 700);
+        
+        setTimeout(() => {
+            createIcon('购', '#D4B08C', 'contact-active.jpg');
+        }, 800);
+    </script>
+</body>
+</html>

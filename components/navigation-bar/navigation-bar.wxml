@@ -1,0 +1,27 @@
+<!-- 自定义导航栏 -->
+<view class="header-container">
+  <!-- 状态栏占位 -->
+  <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
+  <!-- 导航栏 -->
+  <view class="custom-header">
+    <!-- 左侧：菜单按钮或返回按钮 -->
+    <view class="left-section">
+      <view wx:if="{{showMenu}}" class="menu-button" bindtap="onMenuTap">
+        <view class="menu-icon">
+          <view class="menu-line"></view>
+          <view class="menu-line"></view>
+          <view class="menu-line"></view>
+        </view>
+      </view>
+      <view wx:elif="{{showBack}}" class="back-button" bindtap="onBackTap">
+        <view class="back-icon"></view>
+      </view>
+    </view>
+    <!-- 中间：标题 -->
+    <view class="header-title">
+      <text>{{title}}</text>
+    </view>
+    <!-- 右侧：占位 -->
+    <view class="right-section"></view>
+  </view>
+</view>

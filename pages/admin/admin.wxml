@@ -1,0 +1,263 @@
+<!-- admin.wxml -->
+<view class="container">
+  <!-- 调试信息区域 -->
+  <view class="debug-info">
+    <text class="debug-title">调试信息:</text>
+    <text class="debug-item">加载状态: {{loading ? '加载中' : '已完成'}}</text>
+    <text class="debug-item">产品数量: {{products.length}}</text>
+    <text class="debug-item">分类数量: {{categories.length}}</text>
+    <text class="debug-item">当前标签: {{activeTab}}</text>
+  </view>
+
+  <!-- 导航栏 -->
+  <navigation-bar title="管理后台" showBack="{{true}}" bindback="navigateBack" />
+  
+  <!-- 内容区域 -->
+  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+    <!-- 标签页导航 -->
+    <view class="tabs">
+      <view class="tab {{activeTab === 'products' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="products">产品管理</view>
+      <view class="tab {{activeTab === 'categories' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="categories">分类管理</view>
+      <view class="tab {{activeTab === 'banners' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="banners">轮播图管理</view>
+      <view class="tab {{activeTab === 'migration' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="migration">数据迁移</view>
+      <view class="tab {{activeTab === 'tools' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="tools">工具</view>
+    </view>
+    
+    <!-- 加载中提示 -->
+    <view class="loading" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+    
+    <!-- 默认显示内容 -->
+    <view class="default-content" wx:if="{{!activeTab}}">
+      <view class="welcome-section">
+        <view class="welcome-title">欢迎使用管理后台</view>
+        <view class="welcome-desc">请选择上方标签页开始管理操作</view>
+      </view>
+    </view>
+    
+    <!-- 产品管理 -->
+    <view class="tab-content" wx:if="{{activeTab === 'products'}}">
+      <view class="section-title">产品列表</view>
+      
+      <!-- 产品数据导入 -->
+      <view class="import-section">
+        <view class="import-title">产品数据导入</view>
+        <view class="import-desc">从CSV文件导入产品数据</view>
+        
+        <view class="import-status" wx:if="{{importStatus}}">
+          <text class="{{importSuccess ? 'success' : 'error'}}">{{importStatus}}</text>
+        </view>
+        
+        <view class="import-file-section" wx:if="{{!csvUploaded}}">
+          <view class="import-file-desc">请先上传产品数据CSV文件:</view>
+          <button class="btn" bindtap="chooseCSVFile">选择CSV文件</button>
+        </view>
+        
+        <view class="import-file-section" wx:if="{{csvUploaded}}">
+          <view class="import-file-info">
+            <text class="success">✓ 已上传: {{csvFileName}}</text>
+          </view>
+          <view class="import-file-actions">
+            <button class="btn btn-secondary" bindtap="resetCSVUpload">重新上传</button>
+            <button class="btn btn-warning" bindtap="clearCSVFile">清除文件</button>
+          </view>
+        </view>
+        
+        <view class="action-buttons">
+          <button class="btn btn-primary" bindtap="importProducts" disabled="{{!csvUploaded || importRunning}}">
+            {{importRunning ? '导入中...' : '导入产品数据'}}
+          </button>
+          <button class="btn" bindtap="viewImportLog" wx:if="{{importLogExists}}">查看导入日志</button>
+          <button class="btn btn-error" bindtap="viewImportErrors" wx:if="{{importErrorsExist}}">查看错误</button>
+        </view>
+      </view>
+      
+      <!-- 数据迁移 -->
+      <view class="migration-section">
+        <view class="import-title">数据迁移到云开发</view>
+        <view class="import-desc">将本地mock数据迁移到云开发数据库</view>
+        
+        <view class="import-status" wx:if="{{migrationStatus}}">
+          <text class="{{migrationSuccess ? 'success' : 'error'}}">{{migrationStatus}}</text>
+        </view>
+        
+        <view class="action-buttons">
+          <button class="btn btn-primary" bindtap="testCloudFunction">测试云函数连接</button>
+          <button class="btn btn-warning" bindtap="executeMigration" disabled="{{migrationRunning}}">
+            {{migrationRunning ? '迁移中...' : '执行数据迁移'}}
+          </button>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <view class="product-list">
+        <block wx:for="{{products}}" wx:key="_id">
+          <view class="product-item {{currentProduct._id === item._id ? 'selected' : ''}}" 
+                bindtap="selectProduct" 
+                data-id="{{item._id}}">
+            <view class="product-name">{{item.name}}</view>
+            <view class="product-desc">{{item.description}}</view>
+          </view>
+        </block>
+      </view>
+      
+      <view class="action-buttons">
+        <button class="btn" bindtap="chooseImage" data-type="product">上传产品图片</button>
+      </view>
+    </view>
+    
+    <!-- 分类管理 -->
+    <view class="tab-content" wx:if="{{activeTab === 'categories'}}">
+      <view class="section-title">分类列表</view>
+      <view class="category-list">
+        <block wx:for="{{categories}}" wx:key="_id">
+          <view class="category-item {{currentCategory._id === item._id ? 'selected' : ''}}" 
+                bindtap="selectCategory" 
+                data-id="{{item._id}}">
+            <view class="category-name">{{item.name}}</view>
+            <view class="category-desc">{{item.description || '无描述'}}</view>
+          </view>
+        </block>
+      </view>
+      
+      <view class="action-buttons">
+        <button class="btn" bindtap="chooseImage" data-type="category-icon">上传分类图标</button>
+        <button class="btn" bindtap="chooseImage" data-type="category-image">上传分类图片</button>
+      </view>
+    </view>
+    
+    <!-- 轮播图管理 -->
+    <view class="tab-content" wx:if="{{activeTab === 'banners'}}">
+      <view class="section-title">轮播图管理</view>
+      
+      <view class="action-buttons">
+        <button class="btn" bindtap="chooseImage" data-type="banner">上传轮播图</button>
+      </view>
+    </view>
+
+    <!-- 数据迁移 -->
+    <view class="tab-content" wx:if="{{activeTab === 'migration'}}">
+      <view class="section-title">数据迁移到云开发</view>
+      
+      <!-- 云函数测试 -->
+      <view class="migration-section">
+        <view class="import-title">1. 云函数连接测试</view>
+        <view class="import-desc">测试云函数是否正常工作</view>
+        
+        <view class="action-buttons">
+          <button class="btn btn-primary" bindtap="testCloudFunction">测试云函数连接</button>
+        </view>
+      </view>
+      
+      <!-- 数据迁移 -->
+      <view class="migration-section">
+        <view class="import-title">2. 执行数据迁移</view>
+        <view class="import-desc">将本地mock数据迁移到云开发数据库</view>
+        
+        <view class="import-status" wx:if="{{migrationStatus}}">
+          <text class="{{migrationSuccess ? 'success' : 'error'}}">{{migrationStatus}}</text>
+        </view>
+        
+        <view class="action-buttons">
+          <button class="btn btn-warning" bindtap="executeMigration" disabled="{{migrationRunning}}">
+            {{migrationRunning ? '迁移中...' : '执行数据迁移'}}
+          </button>
+        </view>
+      </view>
+
+      <!-- 视频URL迁移 -->
+      <view class="migration-section">
+        <view class="import-title">3. 视频URL迁移</view>
+        <view class="import-desc">将视频URL迁移到云存储路径</view>
+        
+        <view class="action-buttons">
+          <button class="btn btn-success" bindtap="goToVideoMigration">
+            打开视频迁移管理
+          </button>
+        </view>
+      </view>
+
+      <!-- 使用说明 -->
+      <view class="migration-section">
+        <view class="import-title">使用说明</view>
+        <view class="instructions">
+          <text>1. 首先点击"测试云函数连接"确保云函数正常</text>
+          <text>2. 确保在云开发控制台创建了 categories 和 products 集合</text>
+          <text>3. 点击"执行数据迁移"开始迁移数据</text>
+          <text>4. 迁移完成后可以在云开发控制台查看数据</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 图片预览和上传确认 -->
+    <view class="upload-preview" wx:if="{{tempImages.length > 0}}">
+      <view class="preview-title">图片预览</view>
+      <view class="preview-images">
+        <block wx:for="{{tempImages}}" wx:key="*this">
+          <image class="preview-image" src="{{item}}" mode="aspectFit"></image>
+        </block>
+      </view>
+      
+      <view class="preview-actions">
+        <button class="btn btn-cancel" bindtap="cancelUpload">取消</button>
+        <button class="btn btn-confirm" bindtap="confirmUpload">确认上传</button>
+      </view>
+    </view>
+    
+    <!-- 工具标签页 -->
+    <view class="tab-content" wx:if="{{activeTab === 'tools'}}">
+      <view class="section-title">系统工具</view>
+      
+      <!-- 数据库修复工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">数据库URL修复</view>
+            <view class="tool-desc">修复数据库中的云存储URL格式错误</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToFixDatabase">打开修复工具</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 视频迁移工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">视频迁移管理</view>
+            <view class="tool-desc">管理视频文件的云存储迁移</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToVideoMigration">打开迁移工具</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 云存储测试工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">云存储测试</view>
+            <view class="tool-desc">测试云存储视频播放功能</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToCloudVideoTest">打开测试工具</button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view> 

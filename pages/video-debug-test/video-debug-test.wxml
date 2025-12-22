@@ -1,0 +1,39 @@
+<!--pages/video-debug-test/video-debug-test.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">视频调试测试页面</text>
+  </view>
+  
+  <view class="content">
+    <text class="description">测试云存储视频URL修正功能</text>
+    
+    <view class="test-section">
+      <text class="section-title">测试URL修正：</text>
+      <input class="url-input" 
+             placeholder="输入云存储视频URL进行测试" 
+             value="{{testUrl}}" 
+             bindinput="onUrlInput" />
+      <button class="test-btn" bindtap="testUrlCorrection">测试URL修正</button>
+    </view>
+    
+    <view class="result-section" wx:if="{{testResult}}">
+      <text class="section-title">修正结果：</text>
+      <view class="result-item">
+        <text class="result-label">原始URL:</text>
+        <text class="result-value">{{testResult.original}}</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">修正后:</text>
+        <text class="result-value">{{testResult.corrected}}</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">是否修正:</text>
+        <text class="result-value {{testResult.wasModified ? 'success' : 'normal'}}">
+          {{testResult.wasModified ? '是' : '否'}}
+        </text>
+      </view>
+    </view>
+    
+    <button class="btn" bindtap="goBack">返回</button>
+  </view>
+</view>

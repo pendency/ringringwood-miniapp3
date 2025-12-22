@@ -1,0 +1,32 @@
+<!-- 自定义顶部栏 -->
+<view class="header-container">
+  <!-- 状态栏占位 -->
+  <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
+  <!-- 导航栏 -->
+  <view class="custom-header">
+    <view wx:if="{{showMenuButton}}" class="menu-button" bindtap="toggleMenu">
+      <view class="menu-icon"></view>
+      <view class="menu-icon"></view>
+      <view class="menu-icon"></view>
+    </view>
+    <view class="header-title">
+      <text>{{title}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 侧边菜单 -->
+<view class="side-menu {{showMenu ? 'show' : ''}}">
+  <view class="menu-overlay" bindtap="toggleMenu"></view>
+  <view class="menu-content">
+    <view class="menu-header" style="padding-top: {{statusBarHeight + 20}}px">
+      <text class="menu-title">年轮环环</text>
+    </view>
+    <view class="menu-items">
+      <view class="menu-item" bindtap="navigateToHome">首页</view>
+      <view class="menu-item" bindtap="navigateToCategory" data-type="large">大板系列</view>
+      <view class="menu-item" bindtap="navigateToCategory" data-type="small">小板系列</view>
+      <view class="menu-item" bindtap="navigateToBrand">品牌故事</view>
+    </view>
+  </view>
+</view> 

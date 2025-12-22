@@ -1,0 +1,64 @@
+<!-- pages/migration-test/migration-test.wxml -->
+<view class="container">
+  <view class="header">
+    <text class="title">数据迁移测试</text>
+    <button class="back-btn" bindtap="navigateBack">返回</button>
+  </view>
+
+  <view class="content">
+    <!-- 数据准备测试 -->
+    <view class="section">
+      <view class="section-title">0. 数据准备测试</view>
+      <view class="section-desc">测试mock数据是否正确获取</view>
+      
+      <view class="test-results" wx:if="{{dataTestResults}}">
+        <text class="success">✓ 分类数据: {{dataTestResults.categories.length}}个</text>
+        <text class="success">✓ 产品数据: {{dataTestResults.products.length}}个</text>
+      </view>
+      
+      <button class="btn btn-secondary" bindtap="testDataPreparation">
+        测试数据准备
+      </button>
+    </view>
+
+    <!-- 云函数测试 -->
+    <view class="section">
+      <view class="section-title">1. 云函数连接测试</view>
+      <view class="section-desc">测试云函数是否正常工作</view>
+      
+      <view class="test-results" wx:if="{{testResults}}">
+        <text class="success">✓ 测试通过: {{testResults.passed}}/{{testResults.total}}</text>
+        <text class="success">成功率: {{testResults.successRate}}%</text>
+      </view>
+      
+      <button class="btn btn-primary" bindtap="testCloudFunction">
+        测试云函数连接
+      </button>
+    </view>
+
+    <!-- 数据迁移 -->
+    <view class="section">
+      <view class="section-title">2. 数据迁移</view>
+      <view class="section-desc">将mock数据迁移到云开发数据库</view>
+      
+      <view class="migration-status" wx:if="{{migrationStatus}}">
+        <text class="{{migrationSuccess ? 'success' : 'error'}}">{{migrationStatus}}</text>
+      </view>
+      
+      <button class="btn btn-warning" bindtap="executeMigration" disabled="{{migrationRunning}}">
+        {{migrationRunning ? '迁移中...' : '执行数据迁移'}}
+      </button>
+    </view>
+
+    <!-- 说明 -->
+    <view class="section">
+      <view class="section-title">使用说明</view>
+      <view class="instructions">
+        <text>1. 首先点击"测试云函数连接"确保云函数正常</text>
+        <text>2. 确保在云开发控制台创建了 categories 和 products 集合</text>
+        <text>3. 点击"执行数据迁移"开始迁移数据</text>
+        <text>4. 迁移完成后可以在云开发控制台查看数据</text>
+      </view>
+    </view>
+  </view>
+</view>

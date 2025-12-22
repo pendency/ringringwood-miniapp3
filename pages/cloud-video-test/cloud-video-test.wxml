@@ -1,0 +1,72 @@
+<!--pages/cloud-video-test/cloud-video-test.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">云存储视频测试</text>
+    <button class="retry-btn" bindtap="retryTest">重新测试</button>
+  </view>
+
+  <view class="test-results">
+    <view class="test-item" wx:for="{{testResults}}" wx:key="index">
+      <view class="test-header">
+        <text class="test-title">{{item.title}}</text>
+        <view class="status-badge {{item.status}}">{{item.status}}</view>
+      </view>
+      
+      <view class="url-info">
+        <view class="url-row">
+          <text class="label">原始URL:</text>
+          <text class="url original">{{item.originalUrl}}</text>
+        </view>
+        <view class="url-row">
+          <text class="label">处理后:</text>
+          <text class="url processed">{{item.processedUrl}}</text>
+        </view>
+        <view class="url-row" wx:if="{{item.tempUrl}}">
+          <text class="label">临时URL:</text>
+          <text class="url temp">{{item.tempUrl}}</text>
+        </view>
+        <view class="url-row">
+          <text class="label">状态:</text>
+          <text class="message {{item.isCorrect ? 'valid' : 'invalid'}}">{{item.message}}</text>
+        </view>
+      </view>
+
+      <view class="test-actions" wx:if="{{item.tempUrl}}">
+        <button class="test-play-btn" bindtap="testVideoPlay" data-index="{{index}}">
+          测试播放
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 视频播放测试弹窗 -->
+  <view class="video-test-modal" wx:if="{{currentTestVideo}}">
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">视频播放测试</text>
+        <button class="close-btn" bindtap="closeVideoTest">×</button>
+      </view>
+      
+      <view class="video-container">
+        <video src="{{currentTestVideo.tempUrl}}"
+               class="test-video"
+               controls="true"
+               show-center-play-btn="true"
+               show-play-btn="true"
+               autoplay="false"
+               bindplay="onVideoPlay"
+               binderror="onVideoError">
+        </video>
+      </view>
+      
+      <view class="video-info">
+        <text class="video-title">{{currentTestVideo.title}}</text>
+        <text class="video-status">播放状态: {{isPlaying ? '播放中' : '未播放'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>

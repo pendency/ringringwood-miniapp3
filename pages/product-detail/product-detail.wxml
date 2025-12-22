@@ -1,0 +1,245 @@
+<!--product-detail.wxml-->
+<view class="page">
+  <!-- 导航栏 -->
+  <navigation-bar title="产品详情" bindback="onBack" showBack="{{true}}"></navigation-bar>
+  
+  <!-- 内容区域 -->
+  <scroll-view class="content-container" scroll-y="{{true}}" style="padding-top: {{contentPaddingTop}}px; height: calc(100vh - {{contentPaddingTop}}px - 120rpx); padding-bottom: env(safe-area-inset-bottom);">
+    <view class="container">
+
+      <!-- 自定义图片轮播 -->
+      <view class="custom-swiper" wx:if="{{product.images && product.images.length > 0}}">
+        <!-- 图片容器 -->
+        <view class="custom-swiper-container">
+          <scroll-view class="custom-swiper-scroll" 
+                       scroll-x="{{true}}" 
+                       scroll-left="{{currentImageIndex * swiperItemWidth}}"
+                       scroll-with-animation="{{true}}"
+                       enhanced="{{true}}"
+                       show-scrollbar="{{false}}"
+                       bindscroll="onSwiperScroll">
+            <view class="custom-swiper-wrapper" style="width: {{product.images.length * swiperItemWidth}}px;">
+              <view class="custom-swiper-item" 
+                    wx:for="{{product.images}}" 
+                    wx:key="index"
+                    style="width: {{swiperItemWidth}}px;">
+                <image src="{{item}}"
+                       mode="aspectFit"
+                       class="custom-swiper-image"
+                       bindtap="previewImage"
+                       bindload="onImageLoad"
+                       binderror="onImageError"
+                       data-url="{{item}}"
+                       data-index="{{index}}"
+                       lazy-load="{{false}}"></image>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+        
+        <!-- 指示器 -->
+        <view class="custom-indicators" wx:if="{{product.images.length > 1}}">
+          <view class="custom-indicator {{index === currentImageIndex ? 'active' : ''}}"
+                wx:for="{{product.images}}"
+                wx:key="index"
+                bindtap="switchToImage"
+                data-index="{{index}}"></view>
+        </view>
+        
+        <!-- 左右切换按钮 -->
+        <view class="custom-nav-buttons" wx:if="{{product.images.length > 1}}">
+          <view class="custom-nav-btn custom-nav-prev" 
+                bindtap="prevImage"
+                wx:if="{{currentImageIndex > 0}}">‹</view>
+          <view class="custom-nav-btn custom-nav-next" 
+                bindtap="nextImage"
+                wx:if="{{currentImageIndex < product.images.length - 1}}">›</view>
+        </view>
+      </view>
+
+      <!-- 无图片时的提示 -->
+      <view class="no-image-tip" wx:if="{{!product.images || product.images.length === 0}}">
+        <text>暂无产品图片</text>
+      </view>
+
+      <!-- 1. 产品名称及简介 -->
+      <view class="product-header">
+        <text class="product-name">{{product.name}}</text>
+        <text class="product-brief">{{product.brief}}</text>
+      </view>
+      
+      <!-- 2. 产品视频展示 -->
+      <view class="section" wx:if="{{productVideos && productVideos.length > 0}}">
+        <view class="section-title">产品展示视频</view>
+        <view class="detail-video-section">
+          <view class="detail-video-item" 
+                wx:for="{{productVideos}}" 
+                wx:key="index">
+            <view class="detail-video-title">{{item.title}}</view>
+            
+            <!-- 视频容器 -->
+            <view class="video-container">
+              <!-- 视频播放器 -->
+              <video wx:if="{{!item.hasError}}"
+                     src="{{item.video}}"
+                     class="detail-video"
+                     controls="true"
+                     show-center-play-btn="true"
+                     show-play-btn="true"
+                     show-fullscreen-btn="true"
+                     show-progress="true"
+                     enable-progress-gesture="true"
+                     object-fit="contain"
+                     poster="{{item.poster || ''}}"
+                     initial-time="0"
+                     autoplay="false"
+                     loop="false"
+                     muted="false"
+                     bindplay="onVideoPlay"
+                     bindpause="onVideoPause"
+                     binderror="onVideoError"
+                     bindwaiting="onVideoWaiting"
+                     bindloadedmetadata="onVideoLoaded"
+                     data-index="{{index}}"
+                     data-video-url="{{item.video}}">
+              </video>
+              
+              <!-- 视频加载失败提示 -->
+              <view class="video-error-tip" wx:if="{{item.hasError}}">
+                <view class="error-icon">⚠️</view>
+                <text class="error-text">视频暂时无法播放</text>
+                <text class="error-detail">{{item.errorMsg || '请检查网络连接或稍后重试'}}</text>
+                <view class="error-actions">
+                  <button class="retry-btn" 
+                          bindtap="retryVideo" 
+                          data-index="{{index}}"
+                          wx:if="{{item.canRetry !== false}}">
+                    重试 {{item.retryCount > 0 ? '(' + item.retryCount + '/' + item.maxRetries + ')' : ''}}
+                  </button>
+                  <text class="retry-hint" wx:if="{{item.retryCount >= item.maxRetries}}">
+                    已达到最大重试次数
+                  </text>
+                </view>
+              </view>
+            </view>
+            
+            <view class="detail-video-description" wx:if="{{item.description}}">
+              <text>{{item.description}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 3. 产品详情图展示 -->
+      <view class="section" wx:if="{{product.images && product.images.length > 0}}">
+        <view class="section-title">产品详情图</view>
+        <view class="detail-images-container">
+          <view class="detail-image-item" 
+                wx:for="{{product.images}}" 
+                wx:key="index"
+                bindtap="previewDetailImage"
+                data-url="{{item}}"
+                data-index="{{index}}">
+            <image src="{{item}}"
+                   mode="widthFix"
+                   class="detail-image"
+                   bindload="onDetailImageLoad"
+                   binderror="onDetailImageError"
+                   lazy-load="true"></image>
+            <view class="detail-image-caption">
+              <text class="detail-image-number">图片 {{index + 1}}/{{product.images.length}}</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 无图片时的提示 -->
+        <view class="no-detail-images" wx:if="{{!product.images || product.images.length === 0}}">
+          <text>暂无产品详情图</text>
+        </view>
+      </view>
+
+      <!-- 4. 产品参数 -->
+      <view class="section">
+        <view class="section-title">产品参数</view>
+        <view class="params-list">
+          <!-- 价格参数 - 第一行 -->
+          <view class="param-item" wx:if="{{product.price}}">
+            <text class="param-name">价格</text>
+            <text class="param-value price-value {{product.price === '联系销售' ? 'clickable-price' : ''}}" 
+                  bindtap="{{product.price === '联系销售' ? 'showContactQRCode' : ''}}">{{product.price}}</text>
+          </view>
+          
+          <!-- 尺寸参数 -->
+          <view class="param-item" wx:if="{{product.size}}">
+            <text class="param-name">尺寸</text>
+            <text class="param-value">{{product.size}}</text>
+          </view>
+          
+          <!-- 重量参数 -->
+          <view class="param-item" wx:if="{{product.weight}}">
+            <text class="param-name">重量</text>
+            <text class="param-value">{{product.weight}}</text>
+          </view>
+          
+          <!-- 颜色参数 -->
+          <view class="param-item" wx:if="{{product.color}}">
+            <text class="param-name">颜色</text>
+            <text class="param-value">{{product.color}}</text>
+          </view>
+          
+          <!-- 应用场景参数 -->
+          <view class="param-item" wx:if="{{product.applicationScenario}}">
+            <text class="param-name">应用场景</text>
+            <text class="param-value">{{product.applicationScenario}}</text>
+          </view>
+          
+          <!-- 无参数时的提示 -->
+          <view class="no-params-tip" wx:if="{{!product.price && !product.size && !product.weight && !product.color && !product.applicationScenario}}">
+            <text>暂无产品参数信息</text>
+          </view>
+        </view>
+      </view>
+      
+
+      <!-- 相似推荐产品 -->
+      <view class="section">
+        <view class="section-title">相似推荐</view>
+        <scroll-view class="similar-products" scroll-x="true" enhanced="true" show-scrollbar="false">
+          <view class="similar-item" wx:for="{{similarProducts}}" wx:key="id" bindtap="navigateToDetail" data-id="{{item.id}}">
+            <view class="similar-image-container">
+              <image src="{{item.imageUrl}}" mode="aspectFill" class="similar-image"></image>
+            </view>
+            <view class="similar-name-container">
+              <text class="similar-name">{{item.name}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </scroll-view>
+  
+  <!-- 收藏和咨询按钮 -->
+  <view class="contact-container">
+    <button class="contact-btn {{product.isFavorite ? 'favorite-active' : ''}}" bindtap="toggleFavorite">
+      {{product.isFavorite ? '已收藏' : '收藏'}}
+    </button>
+    <button class="contact-btn btn-primary" bindtap="makePhoneCall">电话咨询</button>
+    <button class="contact-btn" open-type="contact">添加客服微信</button>
+  </view>
+
+  <!-- 微信二维码弹窗 -->
+  <view class="qrcode-modal" wx:if="{{showQRCode}}" bindtap="hideContactQRCode">
+    <view class="qrcode-modal-content" catchtap="">
+      <view class="qrcode-header">
+        <text class="qrcode-title">扫码添加客服微信</text>
+        <view class="qrcode-close" bindtap="hideContactQRCode">×</view>
+      </view>
+      <view class="qrcode-container">
+        <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpeg" 
+               mode="aspectFit" 
+               class="qrcode-image"></image>
+        <text class="qrcode-text">长按保存二维码，微信扫码添加客服</text>
+      </view>
+    </view>
+  </view>
+</view>

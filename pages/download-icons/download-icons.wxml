@@ -1,0 +1,48 @@
+<!-- pages/download-icons/download-icons.wxml -->
+<view class="container">
+  <view class="header">
+    <text class="title">TabBar图标下载</text>
+    <text class="subtitle">从云存储下载TabBar所需的图标文件</text>
+  </view>
+
+  <view class="status-section">
+    <text class="status">状态: {{downloadStatus}}</text>
+  </view>
+
+  <view class="button-section">
+    <button class="download-btn" bindtap="startDownload">开始下载图标</button>
+  </view>
+
+  <view class="progress-section" wx:if="{{downloadedIcons.length > 0}}">
+    <text class="section-title">下载进度 ({{downloadedIcons.length}}/{{totalIcons}})</text>
+    
+    <view class="icon-list">
+      <view class="icon-item" wx:for="{{downloadedIcons}}" wx:key="name">
+        <view class="icon-info">
+          <text class="icon-name">{{item.name}}</text>
+          <text class="icon-status {{item.status}}">
+            {{item.status === 'success' ? '✅ 成功' : '❌ 失败'}}
+          </text>
+        </view>
+        
+        <view class="icon-actions" wx:if="{{item.status === 'success'}}">
+          <button class="mini-btn" bindtap="showFilePath" data-path="{{item.tempPath}}">
+            查看路径
+          </button>
+        </view>
+        
+        <view class="error-info" wx:if="{{item.status === 'failed'}}">
+          <text class="error-text">{{item.error}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="instructions">
+    <text class="instruction-title">使用说明:</text>
+    <text class="instruction-text">1. 点击"开始下载图标"按钮</text>
+    <text class="instruction-text">2. 等待所有图标下载完成</text>
+    <text class="instruction-text">3. 手动将下载的文件复制到项目的images目录</text>
+    <text class="instruction-text">4. 重新编译小程序</text>
+  </view>
+</view>

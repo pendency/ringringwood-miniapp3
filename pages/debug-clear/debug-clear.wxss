@@ -1,0 +1,203 @@
+/* debug-clear.wxss */
+.container {
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 测试结果概览 */
+.test-results {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-item.success {
+  color: #4CAF50;
+}
+
+.result-item.error {
+  color: #f44336;
+}
+
+.result-icon {
+  font-size: 32rpx;
+  margin-right: 20rpx;
+}
+
+.result-text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15rpx;
+  margin-bottom: 20rpx;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 180rpx;
+  height: 70rpx;
+  border-radius: 35rpx;
+  font-size: 24rpx;
+  border: none;
+  background: white;
+  color: #666;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.primary {
+  background: #007AFF;
+  color: white;
+}
+
+.action-btn.warning {
+  background: #FF9500;
+  color: white;
+}
+
+.action-btn.export {
+  background: #34C759;
+  color: white;
+}
+
+.action-btn.copy {
+  background: #5856D6;
+  color: white;
+}
+
+.action-btn.info {
+  background: #007AFF;
+  color: white;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+/* 日志容器 */
+.logs-container {
+  background: white;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  margin-bottom: 30rpx;
+}
+
+.logs-header {
+  background: #f8f9fa;
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logs-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.logs-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.logs-action {
+  font-size: 24rpx;
+  color: #007AFF;
+  cursor: pointer;
+}
+
+.logs-action:active {
+  opacity: 0.6;
+}
+
+.logs-scroll {
+  height: 600rpx;
+  padding: 20rpx 30rpx;
+}
+
+.log-item {
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-item.selected {
+  background-color: #e3f2fd;
+  border-radius: 8rpx;
+  margin: 5rpx 0;
+  padding: 15rpx 10rpx;
+}
+
+.log-text {
+  font-size: 24rpx;
+  line-height: 1.4;
+  color: #333;
+  font-family: monospace;
+}
+
+.log-text.placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* 导出状态提示 */
+.export-status {
+  position: fixed;
+  top: 200rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 30rpx 40rpx;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.export-status.show {
+  opacity: 1;
+}
+
+.export-message {
+  text-align: center;
+  white-space: nowrap;
+}

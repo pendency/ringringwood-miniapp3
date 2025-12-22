@@ -1,0 +1,74 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/category/category",
+    "pages/product-detail/product-detail",
+    "pages/favorite/favorite",
+    "pages/contact/contact",
+    "pages/admin/admin",
+    "pages/migration-test/migration-test",
+    "pages/video-migration/video-migration",
+    "pages/cloud-video-test/cloud-video-test",
+    "pages/fix-database/fix-database",
+    "pages/admin-simple/admin-simple",
+    "pages/fix-database-local/fix-database-local",
+    "pages/fix-all-data/fix-all-data",
+    "pages/temp-fix/temp-fix",
+    "pages/debug-clear/debug-clear",
+    "pages/download-icons/download-icons",
+    "pages/video-test-fix/video-test-fix",
+    "pages/video-debug-test/video-debug-test"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom",
+    "backgroundColor": "#F5F5DC",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#8B5A2B",
+    "selectedColor": "#4D3926",
+    "backgroundColor": "#F5F5DC",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.jpeg",
+        "selectedIconPath": "images/home-active.jpeg"
+      },
+      {
+        "pagePath": "pages/category/category",
+        "text": "分类",
+        "iconPath": "images/category.jpeg",
+        "selectedIconPath": "images/category-active.jpeg"
+      },
+      {
+        "pagePath": "pages/favorite/favorite",
+        "text": "收藏",
+        "iconPath": "images/favorite.jpeg",
+        "selectedIconPath": "images/favorite-active.jpeg"
+      },
+      {
+        "pagePath": "pages/contact/contact",
+        "text": "选购",
+        "iconPath": "images/contact.jpeg",
+        "selectedIconPath": "images/contact-active.jpeg"
+      }
+    ]
+  },
+  "style": "v2",
+  "renderer": "skyline",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

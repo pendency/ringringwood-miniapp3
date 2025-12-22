@@ -1,0 +1,98 @@
+<!--pages/fix-database-local/fix-database-local.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">本地数据库修复工具</text>
+    <text class="subtitle">直接在小程序端修复数据库URL格式</text>
+  </view>
+
+  <view class="progress-section" wx:if="{{isFixing}}">
+    <view class="progress-header">修复进度</view>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{progress}}%"></view>
+    </view>
+    <view class="progress-text">{{progress}}% ({{fixedProducts}}/{{totalProducts}})</view>
+  </view>
+
+  <view class="action-section">
+    <button 
+      class="fix-btn {{isFixing ? 'fixing' : ''}}" 
+      bindtap="startFix"
+      disabled="{{isFixing}}"
+    >
+      {{isFixing ? '修复中...' : '开始修复'}}
+    </button>
+    
+    <button class="clear-btn" bindtap="clearLogs" disabled="{{isFixing}}">清空日志</button>
+  </view>
+
+  <view class="result-section" wx:if="{{fixResult}}">
+    <view class="result-header">修复结果</view>
+    <view class="result-item">
+      <text class="label">总产品数:</text>
+      <text class="value">{{fixResult.totalProducts}}</text>
+    </view>
+    <view class="result-item">
+      <text class="label">修复产品数:</text>
+      <text class="value success">{{fixResult.fixedProducts}}</text>
+    </view>
+    <view class="result-item">
+      <text class="label">修复状态:</text>
+      <text class="value {{fixResult.success ? 'success' : 'error'}}">
+        {{fixResult.success ? '成功' : '失败'}}
+      </text>
+    </view>
+  </view>
+
+  <view class="logs-section">
+    <view class="logs-header">修复日志</view>
+    <scroll-view class="logs-content" scroll-y="true" scroll-top="{{logs.length * 50}}">
+      <view class="log-item" wx:for="{{logs}}" wx:key="index">
+        <text class="log-text">{{item}}</text>
+      </view>
+      <view wx:if="{{logs.length === 0}}" class="empty-logs">
+        暂无日志
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="footer">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

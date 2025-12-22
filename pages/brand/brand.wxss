@@ -1,0 +1,159 @@
+/* brand.wxss */
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #F5F5DC;
+  color: #5D4037;
+}
+
+.scrollarea {
+  flex: 1;
+  overflow-y: hidden;
+  height: 100vh;
+}
+
+/* 内容区域 - 为顶部导航腾出空间 */
+.content-container {
+  padding-top: 64px; /* 默认留出空间，实际会由JS动态计算 */
+}
+
+.container {
+  padding: 30rpx;
+  background-color: #F5F5DC;
+}
+
+/* 内容区块 */
+.section {
+  margin-bottom: 40rpx;
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 20rpx;
+  position: relative;
+  padding-left: 20rpx;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8rpx;
+  height: 32rpx;
+  background-color: #D4B08C;
+  border-radius: 4rpx;
+}
+
+/* 品牌故事 */
+.brand-story {
+  display: flex;
+  flex-direction: column;
+}
+
+.story-image {
+  width: 100%;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.story-content {
+  padding: 10rpx;
+}
+
+.story-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #5D4037;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.story-text {
+  font-size: 28rpx;
+  color: #5D4037;
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 16rpx;
+  text-align: justify;
+}
+
+/* 企业理念 */
+.philosophy-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.philosophy-item {
+  background-color: rgba(212, 176, 140, 0.05);
+  border-radius: 8rpx;
+  padding: 20rpx;
+}
+
+.philosophy-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #5D4037;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.philosophy-desc {
+  font-size: 26rpx;
+  color: #8B5A2B;
+  line-height: 1.5;
+}
+
+/* 联系方式 */
+.contact-info {
+  margin-bottom: 30rpx;
+}
+
+.contact-item {
+  display: flex;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid rgba(139, 90, 43, 0.1);
+}
+
+.contact-item:last-child {
+  border-bottom: none;
+}
+
+.contact-label {
+  width: 100rpx;
+  font-size: 28rpx;
+  color: #5D4037;
+}
+
+.contact-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: #8B5A2B;
+}
+
+.qrcode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 30rpx;
+}
+
+.qrcode-image {
+  width: 300rpx;
+  height: 300rpx;
+  margin-bottom: 16rpx;
+}
+
+.qrcode-text {
+  font-size: 26rpx;
+  color: #5D4037;
+} 

@@ -1,0 +1,51 @@
+<!-- 视频修复测试页面 -->
+<view class="container">
+  <view class="header">
+    <text class="title">视频路径转换测试</text>
+  </view>
+  
+  <view class="test-section">
+    <button class="test-btn" bindtap="testVideoPathConversion">测试路径转换</button>
+    <button class="test-btn" bindtap="testGetTempUrl">测试获取临时URL</button>
+    <button class="test-btn" bindtap="testProductDetail">测试产品详情页</button>
+  </view>
+  
+  <view class="results-section" wx:if="{{testResults.length > 0}}">
+    <text class="section-title">测试结果</text>
+    
+    <view class="result-item" wx:for="{{testResults}}" wx:key="index">
+      <view class="result-header">
+        <text class="result-name">{{item.name}}</text>
+        <text class="result-status {{item.success ? 'success' : 'failed'}}">
+          {{item.success ? '成功' : '失败'}}
+        </text>
+      </view>
+      
+      <view class="result-details">
+        <view class="result-row">
+          <text class="label">输入:</text>
+          <text class="value">{{item.input}}</text>
+        </view>
+        <view class="result-row">
+          <text class="label">输出:</text>
+          <text class="value">{{item.output}}</text>
+        </view>
+        <view class="result-row">
+          <text class="label">期望:</text>
+          <text class="value">{{item.expected}}</text>
+        </view>
+        <view class="result-row" wx:if="{{item.error}}">
+          <text class="label">错误:</text>
+          <text class="value error">{{item.error}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+
+
+
+
+
+

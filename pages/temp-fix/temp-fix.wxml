@@ -1,0 +1,64 @@
+<!--pages/temp-fix/temp-fix.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">临时修复工具</text>
+    <text class="subtitle">快速修复数据库URL格式</text>
+  </view>
+
+  <view class="buttons">
+    <button class="fix-btn" bindtap="fixDatabaseUrls" disabled="{{isFixing}}">
+      {{isFixing ? '修复中...' : '修复所有数据库URL'}}
+    </button>
+    
+    <button class="preview-btn" bindtap="previewFix" disabled="{{isFixing}}">
+      预览修复效果
+    </button>
+    
+    <button class="single-btn" bindtap="fixSingleProduct" disabled="{{isFixing}}">
+      修复单个产品
+    </button>
+  </view>
+
+  <view class="result" wx:if="{{result}}">
+    <text class="result-title">修复结果:</text>
+    <text class="result-text">处理产品数: {{result.totalProcessed}}</text>
+    <text class="result-text">修复产品数: {{result.totalFixed}}</text>
+    <text class="result-text">成功状态: {{result.success ? '成功' : '失败'}}</text>
+  </view>
+</view>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,115 @@
+/* 顶部容器 */
+.header-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  background-color: #F5F5DC;
+}
+
+/* 状态栏 */
+.status-bar {
+  width: 100%;
+  background-color: #F5F5DC;
+}
+
+/* 自定义顶部栏 */
+.custom-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #F5F5DC;
+  color: #5D4037;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.menu-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 24px;
+  padding: 5px;
+}
+
+.menu-icon {
+  width: 100%;
+  height: 2px;
+  background-color: #5D4037;
+  margin: 2px 0;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-left: -30px; /* 抵消菜单按钮的宽度，使标题居中 */
+  letter-spacing: 2px; /* 添加字体间距 */
+}
+
+/* 侧边菜单 */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -80%;
+  width: 80%;
+  height: 100%;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.side-menu.show {
+  left: 0;
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+
+.side-menu.show .menu-overlay {
+  display: block;
+}
+
+.menu-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80%;
+  height: 100%;
+  background-color: #F5F5DC;
+  color: #5D4037;
+  z-index: 1001;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.menu-header {
+  padding: 20px;
+  border-bottom: 1px solid #D4B08C;
+}
+
+.menu-title {
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 2px; /* 添加字体间距 */
+}
+
+.menu-items {
+  padding: 20px;
+}
+
+.menu-item {
+  padding: 15px 0;
+  font-size: 16px;
+  border-bottom: 1px solid #D4B08C;
+} 

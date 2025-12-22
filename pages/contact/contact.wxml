@@ -1,0 +1,106 @@
+<!--contact.wxml-->
+<view class="container">
+  <!-- 导航栏 -->
+  <navigation-bar title="选购" showMenu="{{true}}" bindtoggle="toggleMenu" />
+  
+  <!-- 侧边菜单 -->
+  <view class="side-menu {{showMenu ? 'show' : ''}}">
+    <view class="menu-mask" bindtap="toggleMenu"></view>
+    <view class="menu-content">
+      <view class="menu-header">
+        <image class="menu-logo" src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/brand.jpeg" mode="aspectFit" bindtap="onLogoTap"></image>
+        <text class="menu-title">年轮环环</text>
+      </view>
+      <view class="menu-list">
+        <view class="menu-item" bindtap="navigateToHome">
+          <text>首页</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="原木经典">
+          <text>原木经典</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="树脂美学">
+          <text>树脂美学</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="玩趣设计">
+          <text>玩趣设计</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="高定专属">
+          <text>高定专属</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="桌架专区">
+          <text>桌架专区</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToFavorite">
+          <text>收藏</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToContact">
+          <text>选购</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容区域 -->
+  <scroll-view class="scrollarea" scroll-y type="list">
+    <view class="content-container" style="padding-top: {{statusBarHeight + navBarHeight}}px;">
+      <!-- 联系方式 -->
+      <view class="section contact-section">
+        <view class="section-title">联系我们</view>
+        <view class="contact-info">
+          <view class="contact-item" bindtap="makePhoneCall">
+            <view class="contact-icon">
+              <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/icons/icon-phone.jpeg" mode="aspectFit"></image>
+            </view>
+            <view class="contact-detail">
+              <text class="contact-label">电话咨询</text>
+              <text class="contact-value">{{contactPhone}}</text>
+            </view>
+            <view class="contact-action">拨打</view>
+          </view>
+          
+          <view class="contact-item" bindtap="copyWechat">
+            <view class="contact-icon">
+              <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/icons/icon-wechat.jpeg" mode="aspectFit"></image>
+            </view>
+            <view class="contact-detail">
+              <text class="contact-label">微信咨询</text>
+              <text class="contact-value">{{contactWechat}}</text>
+            </view>
+            <view class="contact-action">复制</view>
+          </view>
+          
+          <view class="contact-item" bindtap="copyAddress">
+            <view class="contact-icon">
+              <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/icons/icon-address.jpeg" mode="aspectFit"></image>
+            </view>
+            <view class="contact-detail">
+              <text class="contact-label">展厅地址</text>
+              <text class="contact-value">{{contactAddress}}</text>
+            </view>
+            <view class="contact-action">复制</view>
+          </view>
+          
+          <view class="contact-item" bindtap="copyEmail">
+            <view class="contact-icon">
+              <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/icons/icon-email.jpeg" mode="aspectFit"></image>
+            </view>
+            <view class="contact-detail">
+              <text class="contact-label">电子邮箱</text>
+              <text class="contact-value">{{contactEmail}}</text>
+            </view>
+            <view class="contact-action">复制</view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 二维码 -->
+      <view class="section qrcode-section">
+        <view class="qrcode-container">
+          <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpeg" mode="aspectFit" class="qrcode-image"></image>
+          <text class="qrcode-text">扫码添加客服微信</text>
+        </view>
+      </view>
+      
+    </view>
+  </scroll-view>
+</view> 

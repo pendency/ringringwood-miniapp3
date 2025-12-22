@@ -1,0 +1,125 @@
+/* pages/migration-test/migration-test.wxss */
+.container {
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 30rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.back-btn {
+  background-color: #666;
+  color: white;
+  font-size: 24rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 4rpx;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.section {
+  background-color: white;
+  padding: 30rpx;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.section-desc {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.test-results {
+  background-color: #e8f5e8;
+  padding: 15rpx;
+  border-radius: 4rpx;
+  margin-bottom: 20rpx;
+  border: 1px solid #4CAF50;
+}
+
+.test-results text {
+  display: block;
+  margin-bottom: 5rpx;
+}
+
+.migration-status {
+  background-color: #f0f0f0;
+  padding: 15rpx;
+  border-radius: 4rpx;
+  margin-bottom: 20rpx;
+}
+
+.success {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.error {
+  color: #F44336;
+  font-weight: bold;
+}
+
+.btn {
+  width: 100%;
+  background-color: #007AFF;
+  color: white;
+  font-size: 28rpx;
+  padding: 20rpx;
+  border-radius: 8rpx;
+  border: none;
+  margin-top: 10rpx;
+}
+
+.btn-primary {
+  background-color: #007AFF;
+}
+
+.btn-secondary {
+  background-color: #6C757D;
+}
+
+.btn-warning {
+  background-color: #FF9800;
+}
+
+.btn:disabled {
+  background-color: #ccc;
+  color: #999;
+}
+
+.instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.instructions text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}

@@ -1,0 +1,105 @@
+<!--favorite.wxml-->
+<view class="container">
+  <!-- 导航栏 -->
+  <navigation-bar title="收藏" showMenu="{{true}}" bindtoggle="toggleMenu" />
+  
+  <!-- 侧边菜单 -->
+  <view class="side-menu {{showMenu ? 'show' : ''}}">
+    <view class="menu-mask" bindtap="toggleMenu"></view>
+    <view class="menu-content">
+      <view class="menu-header">
+        <image class="menu-logo" src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/brand.jpeg" mode="aspectFit" bindtap="onLogoTap"></image>
+        <text class="menu-title">年轮环环</text>
+      </view>
+      <view class="menu-list">
+        <view class="menu-item" bindtap="navigateToHome">
+          <text>首页</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="原木经典">
+          <text>原木经典</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="树脂美学">
+          <text>树脂美学</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="玩趣设计">
+          <text>玩趣设计</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="高定专属">
+          <text>高定专属</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="桌架专区">
+          <text>桌架专区</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToFavorite">
+          <text>收藏</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToContact">
+          <text>选购</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容区域 -->
+  <scroll-view class="scrollarea" scroll-y type="list">
+    <view class="content-container" style="padding-top: {{statusBarHeight + navBarHeight}}px;">
+      <!-- 标题 -->
+      <view class="page-title">我的收藏</view>
+      
+      <!-- 加载状态 -->
+      <view class="loading" wx:if="{{loading}}">
+        <text>加载中...</text>
+      </view>
+      
+      <!-- 收藏列表 -->
+      <view class="favorite-list" wx:if="{{!loading && favorites.length > 0}}">
+        <view class="favorite-item" 
+              wx:for="{{favorites}}" 
+              wx:key="_id" 
+              bindtap="navigateToDetail" 
+              data-id="{{item._id}}">
+          <image class="favorite-img" 
+                 src="{{item.imageUrls[0] || '/images/banner1.jpeg'}}" 
+                 mode="aspectFill"
+                 binderror="onImageError"
+                 data-item-id="{{item._id}}"></image>
+          <view class="favorite-info">
+            <text class="favorite-name">{{item.name}}</text>
+            <text class="favorite-desc">{{item.description}}</text>
+            <text class="favorite-price {{item.price === '联系销售' ? 'clickable-price' : ''}}" 
+                  bindtap="{{item.price === '联系销售' ? 'showContactQRCode' : ''}}">{{item.price === '联系销售' ? '联系销售' : '¥' + item.price + '起'}}</text>
+          </view>
+          <view class="remove-btn" catchtap="removeFavorite" data-id="{{item._id}}">
+            <text>取消收藏</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 空状态 -->
+      <view class="empty-state" wx:if="{{!loading && favorites.length === 0}}">
+        <view class="empty-icon">💝</view>
+        <text class="empty-text">暂无收藏</text>
+        <text class="empty-desc">您可以在产品分类页面或详情页添加收藏</text>
+        <navigator url="/pages/category/category" open-type="switchTab" class="go-browse-btn">
+          去浏览
+        </navigator>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 微信二维码弹窗 -->
+  <view class="qrcode-modal" wx:if="{{showQRCode}}" bindtap="hideContactQRCode">
+    <view class="qrcode-modal-content" catchtap="">
+      <view class="qrcode-header">
+        <text class="qrcode-title">扫码添加客服微信</text>
+        <view class="qrcode-close" bindtap="hideContactQRCode">×</view>
+      </view>
+      <view class="qrcode-container">
+        <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpeg" 
+               mode="aspectFit" 
+               class="qrcode-image"></image>
+        <text class="qrcode-text">长按保存二维码，微信扫码添加客服</text>
+      </view>
+    </view>
+  </view>
+</view>

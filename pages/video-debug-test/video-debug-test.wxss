@@ -1,0 +1,118 @@
+/* pages/video-debug-test/video-debug-test.wxss */
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #f5f5dc;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #4d3926;
+}
+
+.content {
+  text-align: left;
+}
+
+.description {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+  display: block;
+  text-align: center;
+}
+
+.test-section {
+  margin-bottom: 40rpx;
+  padding: 20rpx;
+  background-color: white;
+  border-radius: 10rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #4d3926;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.url-input {
+  width: 100%;
+  padding: 20rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  margin-bottom: 20rpx;
+  box-sizing: border-box;
+}
+
+.test-btn {
+  background-color: #8b5a2b;
+  color: white;
+  border-radius: 10rpx;
+  padding: 15rpx 30rpx;
+  font-size: 26rpx;
+  width: 100%;
+}
+
+.result-section {
+  padding: 20rpx;
+  background-color: #f9f9f9;
+  border-radius: 10rpx;
+  margin-bottom: 40rpx;
+}
+
+.result-item {
+  margin-bottom: 15rpx;
+  border-bottom: 1rpx solid #eee;
+  padding-bottom: 10rpx;
+}
+
+.result-label {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #666;
+  display: block;
+  margin-bottom: 5rpx;
+}
+
+.result-value {
+  font-size: 24rpx;
+  color: #333;
+  word-break: break-all;
+  display: block;
+  padding: 10rpx;
+  background-color: white;
+  border-radius: 5rpx;
+}
+
+.result-value.success {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.result-value.normal {
+  color: #333;
+}
+
+.btn {
+  background-color: #8b5a2b;
+  color: white;
+  border-radius: 10rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  width: 100%;
+  text-align: center;
+}
+
+.btn:hover {
+  background-color: #4d3926;
+}

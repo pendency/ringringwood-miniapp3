@@ -1,0 +1,46 @@
+{
+  "name": "fixDatabaseUrls",
+  "version": "1.0.0",
+  "description": "修复数据库中的云存储URL格式",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

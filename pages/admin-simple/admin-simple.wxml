@@ -1,0 +1,82 @@
+<!--pages/admin-simple/admin-simple.wxml-->
+<view class="container">
+  <!-- 简单导航栏 -->
+  <view class="header-container">
+    <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
+    <view class="custom-header">
+      <view class="back-button" bindtap="navigateBack">
+        <view class="back-icon"></view>
+      </view>
+      <view class="header-title">
+        <text>管理后台</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 内容区域 -->
+  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+    <!-- 标签页导航 -->
+    <view class="tabs">
+      <view class="tab {{activeTab === 'tools' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="tools">工具</view>
+      <view class="tab {{activeTab === 'test' ? 'active' : ''}}" 
+            bindtap="switchTab" 
+            data-tab="test">测试</view>
+    </view>
+    
+    <!-- 工具标签页 -->
+    <view class="tab-content" wx:if="{{activeTab === 'tools'}}">
+      <view class="section-title">系统工具</view>
+      
+      <!-- 数据库修复工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">数据库URL修复</view>
+            <view class="tool-desc">修复数据库中的云存储URL格式错误</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-danger" bindtap="goToFixAllData">全面修复（强力）</button>
+            <button class="btn btn-primary" bindtap="goToFixDatabaseLocal">本地修复</button>
+            <button class="btn btn-secondary" bindtap="goToFixDatabase">云函数修复</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 视频迁移工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">视频迁移管理</view>
+            <view class="tool-desc">管理视频文件的云存储迁移</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToVideoMigration">打开迁移工具</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 云存储测试工具 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">云存储测试</view>
+            <view class="tool-desc">测试云存储视频播放功能</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToCloudVideoTest">打开测试工具</button>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 测试标签页 -->
+    <view class="tab-content" wx:if="{{activeTab === 'test'}}">
+      <view class="section-title">页面测试</view>
+      <view class="test-info">
+        <text>如果您能看到这个页面，说明基本功能正常。</text>
+      </view>
+    </view>
+  </view>
+</view>

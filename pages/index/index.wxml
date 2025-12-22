@@ -1,0 +1,191 @@
+<!-- index.wxml -->
+<view class="container">
+  <!-- 导航栏 -->
+  <navigation-bar title="年轮环环" showMenu="{{true}}" bindtoggle="toggleMenu" />
+  
+  <!-- 临时菜单按钮已被navigation-bar组件替代，不再需要 -->
+  
+  <!-- 侧边菜单 -->
+  <view class="side-menu {{showMenu ? 'show' : ''}}">
+    <view class="menu-mask" bindtap="toggleMenu"></view>
+    <view class="menu-content">
+      <view class="menu-header">
+        <image class="menu-logo" src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/brand.jpeg" mode="aspectFit" bindtap="onLogoTap"></image>
+        <text class="menu-title">年轮环环</text>
+      </view>
+      <view class="menu-list">
+        <view class="menu-item" bindtap="navigateToHome">
+          <text>首页</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="原木经典">
+          <text>原木经典</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="树脂美学">
+          <text>树脂美学</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="玩趣设计">
+          <text>玩趣设计</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="高定专属">
+          <text>高定专属</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToCategory" data-type="桌架专区">
+          <text>桌架专区</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToFavorite">
+          <text>收藏</text>
+        </view>
+        <view class="menu-item" bindtap="navigateToContact">
+          <text>选购</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 内容区域 -->
+  <view class="content-container" style="padding-top: {{statusBarHeight + navBarHeight}}px;">
+    <!-- 轮播图 -->
+    <view class="swiper-container">
+      <swiper class="banner" indicator-dots="{{true}}" autoplay="{{true}}" interval="{{3000}}" duration="{{500}}" circular="{{true}}">
+      <block wx:for="{{banners}}" wx:key="id">
+        <swiper-item>
+          <image src="{{item.imageUrl}}" class="banner-image" mode="aspectFill" bindtap="navigateToBannerCategory" data-category="{{item.title}}"></image>
+          <view class="banner-content" bindtap="navigateToBannerCategory" data-category="{{item.title}}">
+            <view class="banner-title">{{item.title}}</view>
+            <view class="banner-subtitle" wx:if="{{item.subtitle}}">{{item.subtitle}}</view>
+          </view>
+        </swiper-item>
+      </block>
+    </swiper>
+    </view>
+    
+    <!-- 品牌 slogan -->
+    <view class="brand-slogan">年轮是树的故事，环环是家的史诗。</view>
+    
+    <!-- 选购入口 -->
+    <view class="contact-entry" bindtap="navigateToContact">
+      <view class="contact-entry-text">立即选购</view>
+      <view class="contact-entry-arrow">→</view>
+    </view>
+    
+    <!-- 精选产品 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">精选产品</text>
+        <text class="section-more" bindtap="navigateToCategory">查看更多</text>
+      </view>
+      <view class="product-list">
+        <block wx:for="{{hotProducts}}" wx:key="_id">
+          <view class="product-item" bindtap="navigateToDetail" data-id="{{item._id}}">
+            <image class="product-image" src="{{item.imageUrls[0]}}" mode="aspectFill"></image>
+            <view class="product-info">
+              <text class="product-name">{{item.name}}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+    <!-- 灵感上新 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">灵感上新</text>
+        <text class="section-more" bindtap="navigateToNewProducts">查看更多</text>
+      </view>
+      <view class="new-products-list">
+        <block wx:for="{{newProducts}}" wx:key="_id">
+          <view class="new-product-item" bindtap="navigateToDetail" data-id="{{item._id}}">
+            <view class="new-product-image-container">
+              <image class="new-product-image" src="{{item.imageUrls[0]}}" mode="aspectFill"></image>
+              <view class="new-tag">NEW</view>
+            </view>
+            <view class="new-product-info">
+              <text class="new-product-name">{{item.name}}</text>
+              <text class="new-product-desc">{{item.description}}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+    <!-- 分类导航 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">产品分类</text>
+      </view>
+      <view class="category-list">
+        <block wx:for="{{categories}}" wx:key="_id">
+          <view class="category-item" bindtap="navigateToCategory" data-type="{{item.name}}">
+            <image class="category-image" src="{{item.imageUrl || 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/categories/category-wood.jpeg'}}" mode="aspectFill"></image>
+            <view class="category-name">{{item.name}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+    <!-- 页脚品牌标语 -->
+    <view class="footer-slogan">年轮是树的故事，环环是家的史诗。</view>
+  </view>
+
+  <!-- 管理员手势输入界面 -->
+  <view class="admin-gesture-overlay" wx:if="{{showGestureInput}}">
+    <view class="gesture-container">
+      <view class="gesture-title">管理员验证</view>
+      <view class="gesture-subtitle">{{gestureConfig.description}}</view>
+      
+      <view class="gesture-grid">
+        <!-- 第一行 -->
+        <view class="gesture-row">
+          <view class="gesture-item" data-gesture="left-top" bindtap="onGestureInput">
+            <text class="gesture-text">左上</text>
+          </view>
+          <view class="gesture-item" data-gesture="center-top" bindtap="onGestureInput">
+            <text class="gesture-text">中上</text>
+          </view>
+          <view class="gesture-item" data-gesture="right-top" bindtap="onGestureInput">
+            <text class="gesture-text">右上</text>
+          </view>
+        </view>
+        
+        <!-- 第二行 -->
+        <view class="gesture-row">
+          <view class="gesture-item" data-gesture="left-center" bindtap="onGestureInput">
+            <text class="gesture-text">左中</text>
+          </view>
+          <view class="gesture-item" data-gesture="center-center" bindtap="onGestureInput">
+            <text class="gesture-text">中心</text>
+          </view>
+          <view class="gesture-item" data-gesture="right-center" bindtap="onGestureInput">
+            <text class="gesture-text">右中</text>
+          </view>
+        </view>
+        
+        <!-- 第三行 -->
+        <view class="gesture-row">
+          <view class="gesture-item" data-gesture="left-bottom" bindtap="onGestureInput">
+            <text class="gesture-text">左下</text>
+          </view>
+          <view class="gesture-item {{adminGestureSequence.length > 0 && adminGestureSequence[adminGestureSequence.length-1] === 'bottom' ? 'active' : ''}}" data-gesture="bottom" bindtap="onGestureInput">
+            <text class="gesture-text">下</text>
+          </view>
+          <view class="gesture-item" data-gesture="right-bottom" bindtap="onGestureInput">
+            <text class="gesture-text">右下</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="gesture-sequence">
+        <text class="sequence-title">当前序列：</text>
+        <view class="sequence-items">
+          <text wx:for="{{adminGestureSequence}}" wx:key="*this" class="sequence-item">{{item}}</text>
+        </view>
+      </view>
+      
+      <view class="gesture-progress">
+        <text>{{adminGestureSequence.length}} / {{gestureConfig ? gestureConfig.requiredSequence.length : 0}}</text>
+      </view>
+      
+      <button class="gesture-cancel" bindtap="cancelGestureInput">取消</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,102 @@
+<!--pages/fix-database-urls/fix-database-urls.wxml-->
+<view class="container">
+  <!-- 标题栏 -->
+  <view class="header">
+    <view class="title">数据库URL修复工具</view>
+    <view class="subtitle">修复数据库中的云存储URL格式错误</view>
+  </view>
+
+  <!-- 警告提示 -->
+  <view class="warning">
+    <view class="warning-title">⚠️ 重要提示</view>
+    <view class="warning-content">
+      此操作将直接修改数据库中的产品数据，请确保已备份重要数据。
+      修复将把错误的云存储URL格式修正为正确格式。
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="actions">
+    <button class="action-btn fix-btn" bindtap="startFix" disabled="{{isFixing}}">
+      {{isFixing ? '修复中...' : '开始修复数据库URL'}}
+    </button>
+  </view>
+
+  <!-- 修复结果 -->
+  <view class="results-section" wx:if="{{fixResults}}">
+    <view class="section-title">修复结果</view>
+    <view class="results-summary">
+      <view class="result-item">
+        <text class="result-label">处理产品数:</text>
+        <text class="result-value">{{fixResults.totalProcessed}}</text>
+      </view>
+      <view class="result-item">
+        <text class="result-label">修复产品数:</text>
+        <text class="result-value success">{{fixResults.totalFixed}}</text>
+      </view>
+    </view>
+    
+    <scroll-view class="results-list" scroll-y="true" wx:if="{{fixResults.results}}">
+      <view class="result-product" wx:for="{{fixResults.results}}" wx:key="_id">
+        <text class="product-name">{{item.name || item._id}}</text>
+        <text class="product-status {{item.status === 'fixed' ? 'fixed' : 'unchanged'}}">
+          {{item.status === 'fixed' ? '已修复' : '无变更'}}
+        </text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 日志区域 -->
+  <view class="logs-section">
+    <view class="section-title">
+      <text>操作日志</text>
+      <button class="clear-btn" bindtap="clearLogs">清空</button>
+    </view>
+    <scroll-view class="logs-list" scroll-y="true">
+      <view class="log-item" wx:for="{{logs}}" wx:key="index">
+        {{item}}
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 返回按钮 -->
+  <view class="footer">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,168 @@
+/* pages/download-icons/download-icons.wxss */
+.container {
+  padding: 40rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 60rpx;
+}
+
+.title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.status-section {
+  background-color: #fff;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+}
+
+.status {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.button-section {
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.download-btn {
+  background-color: #8B5A2B;
+  color: white;
+  border-radius: 50rpx;
+  padding: 24rpx 60rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  border: none;
+}
+
+.download-btn:active {
+  background-color: #6d4521;
+}
+
+.progress-section {
+  background-color: #fff;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+}
+
+.icon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.icon-item {
+  padding: 24rpx;
+  background-color: #f8f8f8;
+  border-radius: 12rpx;
+  border-left: 8rpx solid #8B5A2B;
+}
+
+.icon-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.icon-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.icon-status {
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.icon-status.success {
+  color: #4CAF50;
+}
+
+.icon-status.failed {
+  color: #F44336;
+}
+
+.icon-actions {
+  text-align: right;
+}
+
+.mini-btn {
+  background-color: #D4B08C;
+  color: white;
+  border-radius: 20rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  border: none;
+  margin: 0;
+}
+
+.mini-btn:active {
+  background-color: #c19d7a;
+}
+
+.error-info {
+  margin-top: 16rpx;
+}
+
+.error-text {
+  font-size: 24rpx;
+  color: #F44336;
+  background-color: #ffebee;
+  padding: 12rpx;
+  border-radius: 8rpx;
+  display: block;
+}
+
+.instructions {
+  background-color: #fff;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+}
+
+.instruction-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.instruction-text {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+  padding-left: 20rpx;
+  line-height: 1.5;
+}

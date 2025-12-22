@@ -1,0 +1,71 @@
+<!--brand.wxml-->
+<custom-header title="年轮环环"></custom-header>
+
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+    <view class="container">
+      <!-- 品牌故事 -->
+      <view class="section">
+        <view class="section-title">品牌故事</view>
+        <view class="brand-story">
+          <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/brand-story-bg.jpeg" mode="widthFix" class="story-image"></image>
+          <view class="story-content">
+            <text class="story-title">年轮是树的故事，环环是家的史诗</text>
+            <text class="story-text">年轮环环，源于对自然的敬畏与热爱。品牌创立于2010年，专注于高品质木质家具的设计与制作。每一件作品都融合了传统工艺与现代设计理念，展现木材的天然纹理与质感，让使用者感受到自然的温度与生命力。</text>
+            <text class="story-text">我们相信，好的家具不仅是一件实用的物品，更是一种生活态度的表达。每一道年轮都记录着岁月的痕迹，每一件作品都承载着匠人的心血。</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 企业理念 -->
+      <view class="section">
+        <view class="section-title">企业理念</view>
+        <view class="philosophy-content">
+          <view class="philosophy-item">
+            <text class="philosophy-title">质量至上</text>
+            <text class="philosophy-desc">严格把控每一个生产环节，确保每件产品都达到最高品质标准。</text>
+          </view>
+          <view class="philosophy-item">
+            <text class="philosophy-title">自然环保</text>
+            <text class="philosophy-desc">尊重自然，使用环保材料，追求人与自然的和谐共处。</text>
+          </view>
+          <view class="philosophy-item">
+            <text class="philosophy-title">匠心服务</text>
+            <text class="philosophy-desc">以客户需求为中心，提供专业、贴心的服务体验。</text>
+          </view>
+          <view class="philosophy-item">
+            <text class="philosophy-title">创新设计</text>
+            <text class="philosophy-desc">融合传统与现代，不断探索木材的新可能性。</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 联系方式 -->
+      <view class="section contact-section">
+        <view class="section-title">联系我们</view>
+        <view class="contact-info">
+          <view class="contact-item">
+            <text class="contact-label">电话：</text>
+            <text class="contact-value" bindtap="makePhoneCall">13800138000</text>
+          </view>
+          <view class="contact-item">
+            <text class="contact-label">地址：</text>
+            <text class="contact-value">北京市朝阳区建国路88号</text>
+          </view>
+          <view class="contact-item">
+            <text class="contact-label">邮箱：</text>
+            <text class="contact-value">contact@nianlunhuanhuan.com</text>
+          </view>
+          <view class="contact-item">
+            <text class="contact-label">微信：</text>
+            <text class="contact-value">nianlunhuanhuan</text>
+          </view>
+        </view>
+        <view class="qrcode-container">
+          <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpeg" mode="aspectFit" class="qrcode-image"></image>
+          <text class="qrcode-text">扫码添加客服微信</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view> 

@@ -1,0 +1,120 @@
+<!--pages/video-file-check/video-file-check.wxml-->
+<view class="container">
+  <!-- 标题栏 -->
+  <view class="header">
+    <view class="title">视频文件检查工具</view>
+    <view class="subtitle">检查云存储视频文件可用性</view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="actions">
+    <button class="action-btn check-btn" bindtap="checkVideoFiles" disabled="{{isChecking}}">
+      {{isChecking ? '检查中...' : '开始检查'}}
+    </button>
+    <button class="action-btn fix-btn" bindtap="fixMissingVideos" disabled="{{isChecking || !missingFiles.length}}">
+      修复缺失文件
+    </button>
+  </view>
+
+  <!-- 检查结果概览 -->
+  <view class="results-overview" wx:if="{{checkResults}}">
+    <view class="overview-title">检查结果概览</view>
+    <view class="overview-stats">
+      <view class="stat-item">
+        <text class="stat-number">{{checkResults.totalFiles}}</text>
+        <text class="stat-label">总文件数</text>
+      </view>
+      <view class="stat-item success">
+        <text class="stat-number">{{checkResults.availableCount}}</text>
+        <text class="stat-label">可用文件</text>
+      </view>
+      <view class="stat-item error">
+        <text class="stat-number">{{checkResults.missingCount}}</text>
+        <text class="stat-label">缺失文件</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 缺失文件列表 -->
+  <view class="missing-files-section" wx:if="{{missingFiles.length > 0}}">
+    <view class="section-title">缺失的视频文件</view>
+    <scroll-view class="files-list" scroll-y="true">
+      <view class="file-item missing" wx:for="{{missingFiles}}" wx:key="fileId">
+        <view class="file-info">
+          <text class="product-name">{{item.productName}}</text>
+          <text class="file-title">{{item.title}}</text>
+          <text class="file-id">{{item.fileId}}</text>
+          <text class="error-msg">错误: {{item.error}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 可用文件列表 -->
+  <view class="available-files-section" wx:if="{{availableFiles.length > 0}}">
+    <view class="section-title">可用的视频文件</view>
+    <scroll-view class="files-list" scroll-y="true">
+      <view class="file-item available" wx:for="{{availableFiles}}" wx:key="fileId">
+        <view class="file-info">
+          <text class="product-name">{{item.productName}}</text>
+          <text class="file-title">{{item.title}}</text>
+          <text class="file-id">{{item.fileId}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 日志区域 -->
+  <view class="logs-section">
+    <view class="section-title">
+      <text>操作日志</text>
+      <button class="clear-btn" bindtap="clearLogs">清空</button>
+    </view>
+    <scroll-view class="logs-list" scroll-y="true">
+      <view class="log-item" wx:for="{{logs}}" wx:key="index">
+        {{item}}
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 返回按钮 -->
+  <view class="footer">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,307 @@
+/* pages/fix-video-urls/fix-video-urls.wxss */
+.container {
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40rpx;
+  padding: 30rpx;
+  background: white;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.actions {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.preview-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.fix-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.action-btn[disabled] {
+  background: #ccc !important;
+  color: #999 !important;
+}
+
+.preview-section,
+.results-section,
+.logs-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 2rpx solid #eee;
+}
+
+.close-btn,
+.clear-btn {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60rpx;
+  height: 60rpx;
+  font-size: 32rpx;
+  line-height: 1;
+  padding: 0;
+}
+
+.preview-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+}
+
+.preview-summary text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.preview-list,
+.results-list,
+.logs-list {
+  max-height: 600rpx;
+}
+
+.preview-item {
+  border: 2rpx solid #eee;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  margin-bottom: 15rpx;
+}
+
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.product-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+.fix-status {
+  font-size: 24rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.needs-fix {
+  background: #ffe6e6;
+  color: #ff4757;
+}
+
+.no-fix {
+  background: #e6ffe6;
+  color: #2ed573;
+}
+
+.changes {
+  margin-top: 15rpx;
+  padding-top: 15rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.change-item {
+  margin-bottom: 10rpx;
+}
+
+.change-label {
+  font-size: 24rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.url-change {
+  margin-bottom: 10rpx;
+  padding: 10rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+.url-before,
+.url-after {
+  display: block;
+  font-size: 22rpx;
+  word-break: break-all;
+  margin-bottom: 5rpx;
+}
+
+.url-before {
+  color: #ff4757;
+}
+
+.url-after {
+  color: #2ed573;
+}
+
+.results-summary {
+  display: flex;
+  gap: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.result-item {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+}
+
+.result-label {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.result-value {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.result-value.success {
+  color: #2ed573;
+}
+
+.result-product {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15rpx 20rpx;
+  margin-bottom: 10rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+}
+
+.product-status {
+  font-size: 24rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 15rpx;
+}
+
+.product-status.fixed {
+  background: #e6ffe6;
+  color: #2ed573;
+}
+
+.product-status.unchanged {
+  background: #e6f3ff;
+  color: #3742fa;
+}
+
+.log-item {
+  font-size: 24rpx;
+  color: #666;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  word-break: break-all;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 30rpx;
+}
+
+.back-btn {
+  width: 200rpx;
+  height: 70rpx;
+  background: #ddd;
+  color: #666;
+  border-radius: 35rpx;
+  font-size: 28rpx;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

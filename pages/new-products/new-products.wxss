@@ -1,0 +1,150 @@
+/* new-products.wxss */
+.content-container {
+  padding-top: 64px; /* 默认留出空间，实际会由JS动态计算 */
+}
+
+.container {
+  background-color: #F5F5DC;
+  min-height: 100vh;
+  padding: 0 0 40rpx 0;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 30rpx;
+  background-color: #fff;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 10rpx;
+}
+
+.page-subtitle {
+  font-size: 28rpx;
+  color: #8B5A2B;
+  margin-bottom: 20rpx;
+  opacity: 0.8;
+}
+
+.product-count {
+  font-size: 24rpx;
+  color: #D4B08C;
+  background-color: rgba(212, 176, 140, 0.15);
+  padding: 10rpx 18rpx;
+  border-radius: 16rpx;
+  display: inline-block;
+  font-weight: 500;
+}
+
+/* 产品列表 */
+.product-list {
+  padding: 0 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.product-item {
+  background-color: #fff;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.product-img-container {
+  width: 100%;
+  height: 0;
+  padding-top: 75%; /* 4:3 比例 */
+  position: relative;
+  overflow: hidden;
+}
+
+.product-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.new-tag {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  background-color: #D4B08C;
+  color: #fff;
+  padding: 6rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+  border-radius: 6rpx;
+}
+
+.product-info {
+  padding: 24rpx;
+  position: relative;
+}
+
+.product-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #5D4037;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.product-price {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #D4B08C;
+  display: block;
+}
+
+/* 收藏按钮 */
+.favorite-btn {
+  position: absolute;
+  right: 16rpx;
+  bottom: 16rpx;
+  background-color: #F5F5DC;
+  padding: 6rpx 16rpx;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  color: #8B5A2B;
+  z-index: 2;
+}
+
+.favorite-btn:active {
+  opacity: 0.8;
+}
+
+.favorite-btn .favorite-active {
+  color: #D4B08C;
+  font-weight: bold;
+}
+
+/* 加载状态 */
+.loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+  font-size: 28rpx;
+  color: #8B5A2B;
+}
+
+/* 空状态 */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 30rpx;
+  color: #8B5A2B;
+  font-size: 28rpx;
+}

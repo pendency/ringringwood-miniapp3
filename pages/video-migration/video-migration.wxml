@@ -1,0 +1,135 @@
+<!--pages/video-migration/video-migration.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">视频URL迁移管理</text>
+    <view class="header-actions">
+      <button class="tool-btn" bindtap="goToAdminTools">管理工具</button>
+      <button class="reset-btn" bindtap="resetAll">重置</button>
+    </view>
+  </view>
+
+  <view class="steps">
+    <!-- 步骤1：预览迁移 -->
+    <view class="step-card">
+      <view class="step-header">
+        <text class="step-title">步骤1：预览迁移</text>
+        <view class="step-status {{currentStep === 'preview' ? 'active' : ''}}">
+          {{previewResult ? '已完成' : '待执行'}}
+        </view>
+      </view>
+      
+      <view class="step-content">
+        <text class="step-desc">扫描数据库中需要迁移的视频URL，不会修改任何数据</text>
+        
+        <view class="step-result" wx:if="{{previewResult}}">
+          <view class="result-item">
+            <text class="label">总产品数：</text>
+            <text class="value">{{previewResult.totalProducts}}</text>
+          </view>
+          <view class="result-item">
+            <text class="label">需要迁移：</text>
+            <text class="value highlight">{{previewResult.willMigrateCount}}</text>
+          </view>
+          <button class="detail-btn" bindtap="viewDetails" data-type="preview">
+            查看详情
+          </button>
+        </view>
+        
+        <button class="action-btn primary" 
+                bindtap="previewMigration" 
+                disabled="{{isLoading}}">
+          {{isLoading && currentStep === 'preview' ? '预览中...' : '开始预览'}}
+        </button>
+      </view>
+    </view>
+
+    <!-- 步骤2：执行迁移 -->
+    <view class="step-card {{!previewResult ? 'disabled' : ''}}">
+      <view class="step-header">
+        <text class="step-title">步骤2：执行迁移</text>
+        <view class="step-status {{currentStep === 'migrate' ? 'active' : ''}}">
+          {{migrationResult ? '已完成' : '待执行'}}
+        </view>
+      </view>
+      
+      <view class="step-content">
+        <text class="step-desc">将错误的视频URL更新为正确的云存储路径</text>
+        
+        <view class="step-result" wx:if="{{migrationResult}}">
+          <view class="result-item">
+            <text class="label">迁移成功：</text>
+            <text class="value success">{{migrationResult.migratedCount}}</text>
+          </view>
+          <view class="result-item">
+            <text class="label">迁移失败：</text>
+            <text class="value error">{{migrationResult.errorCount}}</text>
+          </view>
+          <view class="result-item">
+            <text class="label">URL更新：</text>
+            <text class="value">{{migrationResult.migrationResults.length}}</text>
+          </view>
+          <button class="detail-btn" bindtap="viewDetails" data-type="migration">
+            查看详情
+          </button>
+        </view>
+        
+        <button class="action-btn warning" 
+                bindtap="executeMigration" 
+                disabled="{{isLoading || !previewResult}}">
+          {{isLoading && currentStep === 'migrate' ? '迁移中...' : '执行迁移'}}
+        </button>
+      </view>
+    </view>
+
+    <!-- 步骤3：验证结果 -->
+    <view class="step-card {{!migrationResult ? 'disabled' : ''}}">
+      <view class="step-header">
+        <text class="step-title">步骤3：验证结果</text>
+        <view class="step-status {{currentStep === 'validate' ? 'active' : ''}}">
+          {{validationResult ? '已完成' : '待执行'}}
+        </view>
+      </view>
+      
+      <view class="step-content">
+        <text class="step-desc">验证云存储中的视频文件是否存在</text>
+        
+        <view class="step-result" wx:if="{{validationResult}}">
+          <view class="result-item">
+            <text class="label">总文件数：</text>
+            <text class="value">{{validationResult.totalFiles}}</text>
+          </view>
+          <view class="result-item">
+            <text class="label">存在文件：</text>
+            <text class="value success">{{validationResult.existsCount}}</text>
+          </view>
+          <view class="result-item">
+            <text class="label">缺失文件：</text>
+            <text class="value error">{{validationResult.missingCount}}</text>
+          </view>
+          <button class="detail-btn" bindtap="viewDetails" data-type="validation">
+            查看详情
+          </button>
+        </view>
+        
+        <button class="action-btn success" 
+                bindtap="validateVideos" 
+                disabled="{{isLoading}}">
+          {{isLoading && currentStep === 'validate' ? '验证中...' : '验证结果'}}
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 完成状态 -->
+  <view class="completion" wx:if="{{validationResult}}">
+    <view class="completion-icon">✅</view>
+    <text class="completion-text">迁移流程已完成！</text>
+    <text class="completion-desc">
+      您的视频URL已成功迁移到云存储，现在可以正常播放了。
+    </text>
+  </view>
+
+  <view class="actions">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>

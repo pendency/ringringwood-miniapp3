@@ -1,0 +1,75 @@
+<!--debug-clear.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">🔧 图片加载诊断工具</text>
+  </view>
+
+  <!-- 测试结果概览 -->
+  <view class="test-results">
+    <view class="result-item {{testResults.categoryDataLoaded ? 'success' : 'error'}}">
+      <text class="result-icon">{{testResults.categoryDataLoaded ? '✅' : '❌'}}</text>
+      <text class="result-text">分类数据加载</text>
+    </view>
+    
+    <view class="result-item {{testResults.productDataLoaded ? 'success' : 'error'}}">
+      <text class="result-icon">{{testResults.productDataLoaded ? '✅' : '❌'}}</text>
+      <text class="result-text">产品数据加载</text>
+    </view>
+    
+    <view class="result-item {{testResults.cloudPathsValid ? 'success' : 'error'}}">
+      <text class="result-icon">{{testResults.cloudPathsValid ? '✅' : '❌'}}</text>
+      <text class="result-text">云存储路径</text>
+    </view>
+    
+    <view class="result-item {{testResults.imagePathsFixed ? 'success' : 'error'}}">
+      <text class="result-icon">{{testResults.imagePathsFixed ? '✅' : '❌'}}</text>
+      <text class="result-text">图片路径修复</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-buttons">
+    <button class="action-btn primary" bindtap="rerunDiagnostics">重新诊断</button>
+    <button class="action-btn export" bindtap="exportLogs">📤 导出日志</button>
+    <button class="action-btn copy" bindtap="copyAllLogs">📋 复制日志</button>
+    <button class="action-btn warning" bindtap="clearAllCache">清除缓存</button>
+  </view>
+
+  <!-- 第二排按钮 -->
+  <view class="action-buttons">
+    <button class="action-btn" bindtap="goToCategory">测试分类页</button>
+    <button class="action-btn" bindtap="goToAdmin">管理后台</button>
+    <button class="action-btn info" bindtap="showExportHelp">📖 导出说明</button>
+  </view>
+
+  <!-- 诊断日志 -->
+  <view class="logs-container">
+    <view class="logs-header">
+      <text class="logs-title">📋 诊断日志 ({{logs.length}} 条)</text>
+      <view class="logs-actions">
+        <text class="logs-action" bindtap="selectAllLogs">全选</text>
+        <text class="logs-action" bindtap="clearLogs">清空</text>
+      </view>
+    </view>
+    <scroll-view class="logs-scroll" scroll-y="true">
+      <view class="log-item {{selectedLogs[index] ? 'selected' : ''}}" 
+            wx:for="{{logs}}" 
+            wx:key="index"
+            bindtap="toggleLogSelection"
+            data-index="{{index}}">
+        <text class="log-text">{{item}}</text>
+      </view>
+      <view class="log-item" wx:if="{{logs.length === 0}}">
+        <text class="log-text placeholder">等待诊断结果...</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 导出状态提示 -->
+  <view class="export-status {{exportStatus.show ? 'show' : ''}}" wx:if="{{exportStatus.message}}">
+    <text class="export-message">{{exportStatus.message}}</text>
+  </view>
+
+  <!-- 隐藏的测试canvas -->
+  <canvas canvas-id="testCanvas" style="width: 1px; height: 1px; position: absolute; left: -9999px;"></canvas>
+</view>

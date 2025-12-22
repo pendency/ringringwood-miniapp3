@@ -1,0 +1,540 @@
+/* index.wxss */
+page {
+  height: 100%;
+  background-color: #F5F5DC;
+  overflow-y: auto;
+}
+
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #F5F5DC;
+  position: relative;
+  overflow: visible;
+}
+
+.content-container {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 10rpx 120rpx;
+  overflow: visible;
+}
+
+/* 侧边菜单 */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  overflow: hidden;
+}
+
+.side-menu.show {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.menu-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.menu-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 70%;
+  height: 100%;
+  background-color: #fff;
+  transform: translateX(-100%);
+  transition: transform 0.3s;
+}
+
+.side-menu.show .menu-content {
+  transform: translateX(0);
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  padding: 40rpx 30rpx;
+  border-bottom: 1px solid #eee;
+}
+
+.menu-logo {
+  width: 80rpx;
+  height: 80rpx;
+  margin-right: 20rpx;
+}
+
+.menu-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #5D4037;
+}
+
+.menu-list {
+  padding: 20rpx 0;
+}
+
+.menu-item {
+  padding: 30rpx;
+  font-size: 32rpx;
+  color: #5D4037;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+/* 轮播图 */
+.swiper-container {
+  width: 100%;
+  height: 0;
+  padding-top: 56.25%; /* 16:9 */
+  position: relative;
+  margin-top: 20rpx;
+}
+
+.banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 16rpx;
+}
+
+.banner-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 30rpx 20rpx 20rpx;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: #fff;
+}
+
+.banner-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+.banner-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0.9;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 品牌 slogan */
+.brand-slogan {
+  text-align: center;
+  color: rgba(102, 51, 0, 0.7);
+  font-size: 28rpx; /* 略小于按钮文字字号 */
+  margin: 30rpx 0;
+  padding: 0 40rpx;
+  line-height: 1.5;
+}
+
+/* 选购入口 */
+.contact-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #8B5A2B;
+  color: #fff;
+  padding: 30rpx 40rpx;
+  border-radius: 16rpx;
+  margin-top: 30rpx;
+  margin-bottom: 40rpx;
+}
+
+.contact-entry-text {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.contact-entry-arrow {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+/* 内容区块 */
+.section {
+  margin-bottom: 40rpx;
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+}
+
+/* 产品分类区域特殊样式 */
+.section:last-child {
+  padding-bottom: 40rpx; /* 增加底部内边距 */
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #5D4037;
+}
+
+.section-more {
+  font-size: 24rpx;
+  color: #8B5A2B;
+}
+
+/* 产品列表 */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.product-item {
+  background-color: #fff;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+  width: 100%;
+  height: 300rpx;
+}
+
+.product-info {
+  padding: 20rpx;
+}
+
+.product-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 10rpx;
+  display: block;
+}
+
+.product-desc {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 灵感上新 */
+.new-products-list {
+  display: grid;
+  grid-template-columns: 1fr; /* 单列布局 */
+  gap: 30rpx; /* 增加间距 */
+}
+
+.new-product-item {
+  background-color: #fff;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+  border-radius: 0; /* 直角矩形 */
+  margin-bottom: 10rpx;
+}
+
+.new-product-image-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-top: 56.25%; /* 16:9 比例 */
+  overflow: hidden;
+}
+
+.new-product-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.new-tag {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  background-color: #D4B08C;
+  color: #fff;
+  padding: 6rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+  border-radius: 6rpx;
+}
+
+.new-product-info {
+  padding: 24rpx;
+}
+
+.new-product-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 10rpx;
+  display: block;
+}
+
+.new-product-desc {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 分类列表 */
+.category-list {
+  display: grid;
+  grid-template-columns: 1fr; /* 修改为单列布局 */
+  gap: 30rpx; /* 增加间距 */
+}
+
+.category-item {
+  position: relative;
+  border-radius: 0; /* 移除圆角，改为直角矩形 */
+  overflow: hidden;
+  height: 0;
+  padding-top: 56.25%; /* 16:9 比例 */
+  margin-bottom: 10rpx; /* 添加底部间距 */
+}
+
+.category-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.category-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 30rpx 20rpx; /* 增加上下内边距 */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: #fff;
+  font-size: 32rpx; /* 增大字体 */
+  font-weight: bold;
+  text-align: center;
+}
+
+/* 页脚品牌标语 */
+.footer-slogan {
+  text-align: center;
+  font-size: 26rpx; /* 略小于产品标题的字号 */
+  color: rgba(139, 90, 43, 0.65); /* 淡棕色带透明度 */
+  padding: 60rpx 40rpx 40rpx; /* 上右下左内边距 */
+  letter-spacing: 1rpx; /* 字间距 */
+  line-height: 1.6; /* 行高 */
+  font-style: normal; /* 正常字体样式 */
+}
+
+
+/* 开发者快捷入口 */
+.dev-shortcuts {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx;
+  background-color: #f8f8f8;
+  border-radius: 10rpx;
+  margin: 20rpx 30rpx;
+}
+
+.dev-btn {
+  flex: 1;
+  padding: 15rpx 20rpx;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.admin-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.tools-btn {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+
+/* ==================== 管理员手势输入样式 ==================== */
+.admin-gesture-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gesture-container {
+  background: white;
+  border-radius: 30rpx;
+  padding: 60rpx 40rpx;
+  margin: 40rpx;
+  text-align: center;
+  max-width: 600rpx;
+  width: 90%;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
+}
+
+.gesture-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #4D3926;
+  margin-bottom: 20rpx;
+}
+
+.gesture-subtitle {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+  line-height: 1.4;
+}
+
+.gesture-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.gesture-row {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+}
+
+.gesture-item {
+  width: 120rpx;
+  height: 120rpx;
+  background: #f8f8f8;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid #e0e0e0;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.gesture-item:active {
+  background: #4D3926;
+  border-color: #4D3926;
+  transform: scale(0.95);
+}
+
+.gesture-item:active .gesture-text {
+  color: white;
+}
+
+.gesture-item.active {
+  background: #4D3926;
+  border-color: #4D3926;
+}
+
+.gesture-item.active .gesture-text {
+  color: white;
+}
+
+.gesture-text {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.gesture-sequence {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: #f8f8f8;
+  border-radius: 15rpx;
+  min-height: 80rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sequence-title {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.sequence-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.sequence-item {
+  font-size: 22rpx;
+  color: #4D3926;
+  background: white;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid #e0e0e0;
+}
+
+.gesture-progress {
+  font-size: 28rpx;
+  color: #4D3926;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+}
+
+.gesture-cancel {
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 15rpx;
+  padding: 25rpx 50rpx;
+  font-size: 28rpx;
+  transition: all 0.3s ease;
+}
+
+.gesture-cancel:active {
+  background: #e0e0e0;
+}
+
+/* ==================== 临时菜单按钮样式（已废弃，使用navigation-bar组件） ==================== */
+/* 临时菜单按钮相关样式已移除，现在使用navigation-bar组件中的菜单按钮 */

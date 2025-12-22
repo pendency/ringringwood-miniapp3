@@ -1,0 +1,35 @@
+<!--pages/video-test/video-test.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">视频URL修复测试</text>
+    <button class="retry-btn" bindtap="retryTest">重新测试</button>
+  </view>
+
+  <view class="test-results">
+    <view class="test-item" wx:for="{{testResults}}" wx:key="index">
+      <view class="test-header">
+        <text class="test-title">{{item.title}}</text>
+        <view class="status-badge {{item.status}}">{{item.status}}</view>
+      </view>
+      
+      <view class="url-info">
+        <view class="url-row">
+          <text class="label">原始URL:</text>
+          <text class="url original">{{item.originalUrl}}</text>
+        </view>
+        <view class="url-row">
+          <text class="label">修复后:</text>
+          <text class="url fixed">{{item.fixedUrl}}</text>
+        </view>
+        <view class="url-row">
+          <text class="label">状态:</text>
+          <text class="message {{item.isValid ? 'valid' : 'invalid'}}">{{item.message}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>
