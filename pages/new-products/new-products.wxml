@@ -24,7 +24,8 @@
         <view class="product-img-container">
           <image class="product-img" 
                  src="{{item.imageUrls[0]}}" 
-                 mode="aspectFill"></image>
+                 mode="aspectFill"
+                 lazy-load="{{true}}"></image>
           <view class="new-tag">NEW</view>
         </view>
         <view class="product-info">

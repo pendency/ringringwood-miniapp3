@@ -15,21 +15,12 @@
         <view class="menu-item" bindtap="navigateToHome">
           <text>首页</text>
         </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="原木经典">
-          <text>原木经典</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="树脂美学">
-          <text>树脂美学</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="玩趣设计">
-          <text>玩趣设计</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="高定专属">
-          <text>高定专属</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="桌架专区">
-          <text>桌架专区</text>
-        </view>
+        <!-- 🆕 动态渲染分类列表 -->
+        <block wx:for="{{categories}}" wx:key="_id">
+          <view class="menu-item" bindtap="navigateToCategory" data-type="{{item.name}}" data-id="{{item._id}}">
+            <text>{{item.name}}</text>
+          </view>
+        </block>
         <view class="menu-item" bindtap="navigateToFavorite">
           <text>收藏</text>
         </view>
@@ -61,6 +52,7 @@
           <image class="favorite-img" 
                  src="{{item.imageUrls[0] || '/images/banner1.jpeg'}}" 
                  mode="aspectFill"
+                 lazy-load="{{true}}"
                  binderror="onImageError"
                  data-item-id="{{item._id}}"></image>
           <view class="favorite-info">

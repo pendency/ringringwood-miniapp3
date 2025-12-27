@@ -265,6 +265,19 @@
   background-color: #c19d7a;
 }
 
+.retry-hint {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.error-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
 .detail-video-description {
   padding: 15rpx 20rpx;
   background-color: #fff;
@@ -399,11 +412,52 @@
   font-size: 28rpx;
 }
 
+/* 产品特点列表 - Requirements 3.5 */
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.feature-item {
+  padding: 20rpx;
+  background-color: #fafafa;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #8B5A2B;
+}
+
+.feature-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.feature-description {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
 /* 价格参数特殊样式 */
 .price-value {
   color: #8B5A2B !important;
   font-weight: bold !important;
   font-size: 32rpx !important;
+}
+
+/* 价格容器 - Requirements 3.6 */
+.price-container {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+/* 原价样式 - Requirements 3.6 */
+.original-price {
+  font-size: 24rpx;
+  color: #999;
+  text-decoration: line-through;
 }
 
 

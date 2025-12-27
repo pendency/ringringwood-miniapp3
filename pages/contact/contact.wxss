@@ -159,11 +159,18 @@ page {
   justify-content: center;
   align-items: center;
   margin-right: 20rpx;
+  background-color: #F5F5DC;
+  border-radius: 50%;
 }
 
 .contact-icon image {
   width: 50rpx;
   height: 50rpx;
+}
+
+.contact-icon .icon-text {
+  font-size: 40rpx;
+  line-height: 1;
 }
 
 .contact-detail {
@@ -190,6 +197,15 @@ page {
   color: #fff;
   font-size: 26rpx;
   border-radius: 30rpx;
+}
+
+/* 营业时间项（无操作按钮） */
+.business-hours-item {
+  cursor: default;
+}
+
+.business-hours-item .contact-detail {
+  flex: 1;
 }
 
 /* 二维码 */

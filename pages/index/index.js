@@ -47,6 +47,24 @@ Page({
     // 加载数据
     this.loadData();
   },
+
+  // 🆕 页面显示时刷新分类数据，确保侧边栏显示最新的分类名称和排序
+  onShow: function() {
+    console.log('[Index] onShow 触发，刷新分类数据');
+    this.refreshCategories();
+  },
+
+  // 🆕 刷新分类数据
+  async refreshCategories() {
+    try {
+      const categories = await productData.refreshCategories();
+      console.log('[Index] 分类数据刷新完成，共', categories.length, '个分类');
+      console.log('[Index] 分类排序:', categories.map(c => `${c.name}(order:${c.order})`).join(' -> '));
+      this.setData({ categories });
+    } catch (error) {
+      console.error('[Index] 刷新分类数据失败:', error);
+    }
+  },
   
   // 下拉刷新
   onPullDownRefresh: function() {
@@ -54,6 +72,7 @@ Page({
   },
   
   // 加载数据
+  // Requirements: 1.5 - 数据加载失败时显示友好的错误提示并提供重试选项
   async loadData() {
     try {
       wx.showLoading({
@@ -73,7 +92,8 @@ Page({
         newProducts: newProductsResult,
         categories: categoriesResult,
         banners: bannersResult,
-        loading: false
+        loading: false,
+        loadError: false
       });
       
       wx.hideLoading();
@@ -82,20 +102,37 @@ Page({
       console.error('加载首页数据失败', error);
       wx.hideLoading();
       wx.stopPullDownRefresh();
-      wx.showToast({
-        title: '加载数据失败',
-        icon: 'none'
+      
+      this.setData({
+        loading: false,
+        loadError: true
+      });
+      
+      // Requirements: 1.5 - 显示友好的错误提示并提供重试选项
+      wx.showModal({
+        title: '加载失败',
+        content: '数据加载失败，请检查网络连接后重试',
+        confirmText: '重试',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            this.loadData();
+          }
+        }
       });
     }
   },
   
-  // 加载热门产品
+  // 加载热门产品 - Requirements: 1.2
+  // 使用 Product Manager 获取热门产品数据
   async loadHotProducts() {
-    // 修改：明确传递 isHot: true 参数，确保获取数据库中 isHot: "TRUE" 的产品
+    // 调用 productData.getHotProducts，传递 isHot: true 参数
+    // 确保获取数据库中 isHot: "TRUE" 的产品
     return await productData.getHotProducts({ limit: 4, isHot: true });
   },
   
-  // 加载新品
+  // 加载新品 - Requirements: 1.2
+  // 使用 Product Manager 获取新品数据
   async loadNewProducts() {
     const result = await productData.getNewProducts({ limit: 4 });
     // getNewProducts 返回 { products: [...], total: ... }，我们只需要 products 数组
@@ -130,11 +167,12 @@ Page({
   // 跳转到分类页
   navigateToCategory: function(e) {
     const type = e.currentTarget.dataset.type;
+    const categoryId = e.currentTarget.dataset.id; // 🆕 获取分类ID
     this.setData({
       showMenu: false
     });
     
-    console.log('首页跳转到分类页，分类类型:', type);
+    console.log('首页跳转到分类页，分类类型:', type, '分类ID:', categoryId);
     
     // 确保全局数据对象存在
     const app = getApp();
@@ -145,14 +183,15 @@ Page({
       app.globalData.eventChannel = {};
     }
     
-    // 设置分类类型到全局数据
+    // 🆕 设置分类类型和ID到全局数据
     app.globalData.eventChannel.categoryType = type;
+    app.globalData.eventChannel.categoryId = categoryId;
     
     // 使用switchTab跳转到分类页
     wx.switchTab({
       url: '/pages/category/category',
       success: function() {
-        console.log('成功跳转到分类页，分类类型:', type);
+        console.log('成功跳转到分类页，分类类型:', type, '分类ID:', categoryId);
       },
       fail: function(error) {
         console.error('跳转到分类页失败:', error);
@@ -189,13 +228,59 @@ Page({
     });
   },
 
-  // 轮播图点击跳转到对应分类页面
+  // 轮播图点击跳转 - 支持跳转到分类页面或产品详情页
+  // Requirements: 1.1, 1.3
   navigateToBannerCategory: function(e) {
-    const categoryName = e.currentTarget.dataset.category;
-    console.log('轮播图点击，分类名称:', categoryName);
+    const banner = e.currentTarget.dataset;
+    const categoryName = banner.category;
+    const linkType = banner.linktype;
+    const linkValue = banner.linkvalue;
+    const productId = banner.productid;
     
+    console.log('轮播图点击，数据:', { categoryName, linkType, linkValue, productId });
+    
+    // 优先使用 linkType/linkValue 进行导航
+    if (linkType && linkValue) {
+      if (linkType === 'product') {
+        // 跳转到产品详情页
+        wx.navigateTo({
+          url: '/pages/product-detail/product-detail?id=' + linkValue,
+          success: function() {
+            console.log('轮播图成功跳转到产品详情页，ID:', linkValue);
+          },
+          fail: function(error) {
+            console.error('轮播图跳转到产品详情页失败:', error);
+            wx.showToast({
+              title: '跳转失败',
+              icon: 'none'
+            });
+          }
+        });
+        return;
+      } else if (linkType === 'category') {
+        // 跳转到分类页
+        this._navigateToCategory(linkValue);
+        return;
+      }
+    }
+    
+    // 如果有 productId，跳转到产品详情页
+    if (productId) {
+      wx.navigateTo({
+        url: '/pages/product-detail/product-detail?id=' + productId,
+        success: function() {
+          console.log('轮播图成功跳转到产品详情页，ID:', productId);
+        },
+        fail: function(error) {
+          console.error('轮播图跳转到产品详情页失败:', error);
+        }
+      });
+      return;
+    }
+    
+    // 回退：使用分类名称导航
     if (!categoryName) {
-      console.error('轮播图点击，但分类名称为空');
+      console.error('轮播图点击，但没有有效的导航数据');
       return;
     }
 
@@ -203,6 +288,11 @@ Page({
     const cleanCategoryName = categoryName.replace(/^[✧✦]\s*/, '');
     console.log('清理后的分类名称:', cleanCategoryName);
     
+    this._navigateToCategory(cleanCategoryName);
+  },
+  
+  // 内部方法：导航到分类页
+  _navigateToCategory: function(categoryName) {
     // 确保全局数据对象存在
     const app = getApp();
     if (!app.globalData) {
@@ -213,13 +303,13 @@ Page({
     }
     
     // 设置分类类型到全局数据
-    app.globalData.eventChannel.categoryType = cleanCategoryName;
+    app.globalData.eventChannel.categoryType = categoryName;
     
     // 跳转到分类页
     wx.switchTab({
       url: '/pages/category/category',
       success: function() {
-        console.log('轮播图成功跳转到分类页，分类:', cleanCategoryName);
+        console.log('轮播图成功跳转到分类页，分类:', categoryName);
       },
       fail: function(error) {
         console.error('轮播图跳转到分类页失败:', error);
@@ -275,6 +365,32 @@ Page({
     });
   },
 
+  // 图片加载失败处理 - Requirements: 1.5
+  onImageError: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const type = e.currentTarget.dataset.type;
+    const imageSrc = e.target.src;
+    
+    console.error('首页图片加载失败:', { index, type, imageSrc });
+    
+    // 设置默认图片
+    const defaultImage = 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/default-product.jpeg';
+    
+    if (type === 'hot' && this.data.hotProducts[index]) {
+      const hotProducts = this.data.hotProducts;
+      if (hotProducts[index].imageUrls && hotProducts[index].imageUrls.length > 0) {
+        hotProducts[index].imageUrls[0] = defaultImage;
+        this.setData({ hotProducts });
+      }
+    } else if (type === 'new' && this.data.newProducts[index]) {
+      const newProducts = this.data.newProducts;
+      if (newProducts[index].imageUrls && newProducts[index].imageUrls.length > 0) {
+        newProducts[index].imageUrls[0] = defaultImage;
+        this.setData({ newProducts });
+      }
+    }
+  },
+
 
   // ==================== 管理员入口相关方法 ====================
   
@@ -300,8 +416,8 @@ Page({
 
   // 显示管理员手势输入
   showAdminGestureInput: function() {
-    const adminAuth = new AdminAuth();
-    const gestureConfig = adminAuth.getGestureConfig();
+    // AdminAuth 使用静态方法，直接调用类方法而非实例方法
+    const gestureConfig = AdminAuth.getGestureConfig();
     
     this.setData({ 
       showGestureInput: true,
@@ -329,8 +445,8 @@ Page({
     
     // 检查手势序列
     if (sequence.length === this.data.gestureConfig.requiredSequence.length) {
-      const adminAuth = new AdminAuth();
-      if (adminAuth.validateGestureSequence(sequence)) {
+      // AdminAuth 使用静态方法
+      if (AdminAuth.validateGestureSequence(sequence)) {
         console.log('手势验证成功');
         this.checkAdminAccess();
       } else {
@@ -369,8 +485,8 @@ Page({
     wx.showLoading({ title: '验证中...' });
     
     try {
-      const adminAuth = new AdminAuth();
-      const result = await adminAuth.checkAdminAccess();
+      // AdminAuth 使用静态方法
+      const result = await AdminAuth.checkAdminAccess();
       
       wx.hideLoading();
       

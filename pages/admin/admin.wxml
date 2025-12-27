@@ -1,7 +1,7 @@
 <!-- admin.wxml -->
 <view class="container">
-  <!-- 调试信息区域 -->
-  <view class="debug-info">
+  <!-- 调试信息区域 - 仅在开发时显示，可通过 showDebug 控制 -->
+  <view class="debug-info" wx:if="{{showDebug}}">
     <text class="debug-title">调试信息:</text>
     <text class="debug-item">加载状态: {{loading ? '加载中' : '已完成'}}</text>
     <text class="debug-item">产品数量: {{products.length}}</text>
@@ -48,11 +48,28 @@
     
     <!-- 产品管理 -->
     <view class="tab-content" wx:if="{{activeTab === 'products'}}">
-      <view class="section-title">产品列表</view>
+      <view class="section-title">产品管理</view>
+      
+      <!-- 产品管理入口 - Requirements: 5.1 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">产品管理系统</view>
+            <view class="tool-desc">新增、编辑、删除产品，管理上架下架状态</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToProductAdmin">打开产品管理</button>
+          </view>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <view class="section-title">产品数据导入</view>
       
       <!-- 产品数据导入 -->
       <view class="import-section">
-        <view class="import-title">产品数据导入</view>
+        <view class="import-title">CSV文件导入</view>
         <view class="import-desc">从CSV文件导入产品数据</view>
         
         <view class="import-status" wx:if="{{importStatus}}">
@@ -120,7 +137,24 @@
     
     <!-- 分类管理 -->
     <view class="tab-content" wx:if="{{activeTab === 'categories'}}">
-      <view class="section-title">分类列表</view>
+      <view class="section-title">分类管理</view>
+      
+      <!-- 分类管理入口 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">分类管理系统</view>
+            <view class="tool-desc">新增、编辑、删除产品分类</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="goToCategoryAdmin">打开分类管理</button>
+          </view>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <view class="section-title">快速预览</view>
       <view class="category-list">
         <block wx:for="{{categories}}" wx:key="_id">
           <view class="category-item {{currentCategory._id === item._id ? 'selected' : ''}}" 
@@ -142,8 +176,128 @@
     <view class="tab-content" wx:if="{{activeTab === 'banners'}}">
       <view class="section-title">轮播图管理</view>
       
+      <!-- 新增轮播图 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">新增轮播图</view>
+            <view class="tool-desc">上传新的轮播图并设置标题和副标题</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="showAddBannerForm">新增轮播图</button>
+          </view>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <!-- 轮播图列表 -->
+      <view class="section-title">轮播图列表</view>
+      
+      <view class="loading" wx:if="{{bannersLoading}}">
+        <text>加载中...</text>
+      </view>
+      
+      <view class="banner-list" wx:if="{{!bannersLoading}}">
+        <view class="empty-tip" wx:if="{{banners.length === 0}}">
+          <text>暂无轮播图，请点击上方按钮添加</text>
+        </view>
+        
+        <block wx:for="{{banners}}" wx:key="_id">
+          <view class="banner-item">
+            <view class="banner-preview">
+              <image class="banner-image" src="{{item.image}}" mode="aspectFill"></image>
+              <view class="banner-order">{{item.order || 999}}</view>
+              <view class="banner-status {{item.status === 1 ? 'active' : 'inactive'}}">
+                {{item.status === 1 ? '启用' : '禁用'}}
+              </view>
+            </view>
+            <view class="banner-info">
+              <view class="banner-title-text">{{item.title || '未设置标题'}}</view>
+              <view class="banner-subtitle-text">{{item.subtitle || '未设置副标题'}}</view>
+            </view>
+            <view class="banner-actions">
+              <button class="btn btn-small" bindtap="editBanner" data-id="{{item._id}}">编辑</button>
+              <button class="btn btn-small btn-error" bindtap="deleteBanner" data-id="{{item._id}}">删除</button>
+            </view>
+          </view>
+        </block>
+      </view>
+      
       <view class="action-buttons">
-        <button class="btn" bindtap="chooseImage" data-type="banner">上传轮播图</button>
+        <button class="btn" bindtap="refreshBanners">刷新列表</button>
+      </view>
+    </view>
+    
+    <!-- 轮播图编辑弹窗 -->
+    <view class="modal-overlay" wx:if="{{showBannerForm}}" bindtap="closeBannerForm">
+      <view class="modal-content banner-form" catchtap="">
+        <view class="modal-header">
+          <text class="modal-title">{{editingBannerId ? '编辑轮播图' : '新增轮播图'}}</text>
+          <view class="modal-close" bindtap="closeBannerForm">×</view>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">轮播图图片</view>
+          <view class="banner-image-upload" wx:if="{{!bannerFormData.image}}" bindtap="chooseBannerImage">
+            <text class="upload-icon">+</text>
+            <text class="upload-text">点击上传图片</text>
+          </view>
+          <view class="banner-image-preview" wx:if="{{bannerFormData.image}}">
+            <image src="{{bannerFormData.image}}" mode="aspectFill"></image>
+            <view class="image-change" bindtap="chooseBannerImage">更换图片</view>
+          </view>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">标题（左下角显示）</view>
+          <input class="form-input" 
+                 placeholder="例如：✧ 原木经典" 
+                 value="{{bannerFormData.title}}"
+                 bindinput="onBannerTitleInput" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">副标题（左下角显示）</view>
+          <input class="form-input" 
+                 placeholder="例如：厚实整板，稳重大气" 
+                 value="{{bannerFormData.subtitle}}"
+                 bindinput="onBannerSubtitleInput" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">排序权重（数字越小越靠前）</view>
+          <input class="form-input" 
+                 type="number"
+                 placeholder="默认999" 
+                 value="{{bannerFormData.order}}"
+                 bindinput="onBannerOrderInput" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">状态</view>
+          <view class="status-switch">
+            <switch checked="{{bannerFormData.status === 1}}" 
+                    bindchange="onBannerStatusChange"
+                    color="#4CAF50" />
+            <text class="status-text">{{bannerFormData.status === 1 ? '启用' : '禁用'}}</text>
+          </view>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">关联产品ID（可选）</view>
+          <input class="form-input" 
+                 placeholder="点击轮播图跳转到的产品ID" 
+                 value="{{bannerFormData.productId}}"
+                 bindinput="onBannerProductIdInput" />
+        </view>
+        
+        <view class="modal-actions">
+          <button class="btn btn-cancel" bindtap="closeBannerForm">取消</button>
+          <button class="btn btn-primary" bindtap="saveBanner" disabled="{{bannerSaving}}">
+            {{bannerSaving ? '保存中...' : '保存'}}
+          </button>
+        </view>
       </view>
     </view>
 

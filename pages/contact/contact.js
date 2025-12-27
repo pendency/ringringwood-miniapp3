@@ -1,14 +1,18 @@
 // contact.js
+const productData = require('../../utils/productData.js');
+
 Page({
   data: {
     showMenu: false, // 控制侧边菜单显示
     statusBarHeight: 20, // 默认状态栏高度
     navBarHeight: 44, // 默认导航栏高度
     contentPaddingTop: 64, // 默认内容区域顶部内边距
+    categories: [], // 🆕 分类列表（用于侧边栏）
     contactPhone: '15794781359', // 在这里修改电话号码
     contactWechat: '15794781359', // 在这里修改微信号
     contactAddress: '江西省赣州市南康区', // 在这里修改实体店地址
-    contactEmail: '18370889142@163.com' // 在这里修改电子邮箱
+    contactEmail: '18370889142@163.com', // 在这里修改电子邮箱
+    businessHours: '周一至周日 9:00-18:00' // 营业时间
   },
   
   onLoad: function() {
@@ -24,29 +28,66 @@ Page({
       navBarHeight: navBarHeight,
       contentPaddingTop: contentPaddingTop
     });
+    
+    // 🆕 加载分类数据
+    this.loadCategories();
+  },
+
+  // 🆕 页面显示时刷新分类数据
+  onShow: function() {
+    this.loadCategories();
+  },
+
+  // 🆕 加载分类数据
+  async loadCategories() {
+    try {
+      const categories = await productData.refreshCategories();
+      console.log('[Contact] 分类数据加载完成，共', categories.length, '个分类');
+      this.setData({ categories });
+    } catch (error) {
+      console.error('[Contact] 加载分类数据失败:', error);
+    }
   },
   
   // 拨打电话
   makePhoneCall: function() {
+    const phone = this.data.contactPhone;
     wx.makePhoneCall({
-      phoneNumber: this.data.contactPhone,
+      phoneNumber: phone,
       success: function() {
         console.log('拨打电话成功');
       },
-      fail: function() {
-        console.log('拨打电话失败');
+      fail: function(err) {
+        console.log('拨打电话失败', err);
+        // 用户取消拨号不显示错误提示
+        if (err.errMsg && err.errMsg.indexOf('cancel') === -1) {
+          wx.showToast({
+            title: '拨号失败',
+            icon: 'none',
+            duration: 2000
+          });
+        }
       }
     });
   },
   
   // 复制微信号
   copyWechat: function() {
+    const wechat = this.data.contactWechat;
     wx.setClipboardData({
-      data: this.data.contactWechat,
+      data: wechat,
       success: function() {
         wx.showToast({
           title: '微信号已复制',
           icon: 'success',
+          duration: 2000
+        });
+      },
+      fail: function(err) {
+        console.log('复制微信号失败', err);
+        wx.showToast({
+          title: '复制失败',
+          icon: 'none',
           duration: 2000
         });
       }

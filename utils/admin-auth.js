@@ -171,7 +171,7 @@ const AdminAuth = class {
     return new Promise((resolve) => {
       wx.showModal({
         title: '设备验证',
-        content: '检测到新设备，请输入管理员验证码\n\n开发环境可使用：123456',
+        content: '检测到新设备，请输入管理员验证码（开发环境可使用：123456）',
         editable: true,
         placeholderText: '请输入6位验证码',
         success: async (res) => {
@@ -218,16 +218,19 @@ const AdminAuth = class {
       return false;
     }
 
+    // 去除换行符和空格
+    const cleanCode = code.replace(/[\n\r\s]/g, '').trim();
+
     // 开发环境下，允许使用 123456 或 000000
     if (this.isDevelopment()) {
-      if (code === '123456' || code === '000000') {
+      if (cleanCode === '123456' || cleanCode === '000000') {
         console.log('开发环境：使用测试验证码');
         return true;
       }
     }
 
-    const isValid = this.adminConfig.validAuthCodes.includes(code);
-    console.log('验证码验证结果:', isValid, '输入:', code);
+    const isValid = this.adminConfig.validAuthCodes.includes(cleanCode);
+    console.log('验证码验证结果:', isValid, '输入:', cleanCode);
     return isValid;
   }
 

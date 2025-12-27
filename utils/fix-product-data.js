@@ -11,9 +11,11 @@ class ProductDataFixer {
   constructor() {
     // 配置参数
     this.config = {
-      // 图片路径配置
-      imageBaseDir: '/images/products/',
-      defaultImage: '/images/products/default-product.jpeg',
+      // 云存储基础路径配置
+      cloudEnvId: 'cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968',
+      imageBaseDir: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/',
+      videoBaseDir: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/videos/custom/',
+      defaultImage: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/default-product.jpeg',
       
       // 支持的图片格式
       supportedImageFormats: ['.jpg', '.jpeg', '.png', '.webp'],
@@ -45,12 +47,13 @@ class ProductDataFixer {
   /**
    * 修复图片路径
    * @param {string} imagePath - 原始图片路径
-   * @returns {string} 修复后的图片路径
+   * @returns {string} 修复后的图片路径（云存储路径）
    * 
    * 原理：
-   * 1. 标准化路径分隔符（\ 转为 /）
-   * 2. 提取文件名
-   * 3. 构建标准的相对路径
+   * 1. 如果已经是云存储路径，直接返回
+   * 2. 标准化路径分隔符（\ 转为 /）
+   * 3. 提取文件名
+   * 4. 构建云存储路径
    */
   fixImagePath(imagePath) {
     if (!imagePath || !imagePath.trim()) {
@@ -58,6 +61,11 @@ class ProductDataFixer {
     }
 
     try {
+      // 如果已经是云存储路径，直接返回
+      if (imagePath.startsWith('cloud://')) {
+        return imagePath;
+      }
+      
       // 标准化路径分隔符
       let normalizedPath = imagePath.replace(/\\/g, '/');
       
@@ -74,7 +82,7 @@ class ProductDataFixer {
         return '';
       }
 
-      // 构建标准路径
+      // 构建云存储路径
       return this.config.imageBaseDir + fileName;
 
     } catch (error) {
@@ -86,7 +94,7 @@ class ProductDataFixer {
   /**
    * 修复视频路径
    * @param {string} videoPath - 原始视频路径
-   * @returns {string} 修复后的视频路径
+   * @returns {string} 修复后的视频路径（云存储路径）
    */
   fixVideoPath(videoPath) {
     if (!videoPath || !videoPath.trim()) {
@@ -94,6 +102,11 @@ class ProductDataFixer {
     }
 
     try {
+      // 如果已经是云存储路径，直接返回
+      if (videoPath.startsWith('cloud://')) {
+        return videoPath;
+      }
+      
       // 标准化路径分隔符
       let normalizedPath = videoPath.replace(/\\/g, '/');
       
@@ -110,8 +123,8 @@ class ProductDataFixer {
         return '';
       }
 
-      // 构建标准路径
-      return this.config.imageBaseDir + fileName;
+      // 构建云存储路径
+      return this.config.videoBaseDir + fileName;
 
     } catch (error) {
       console.warn(`视频路径处理失败: ${videoPath} - ${error.message}`);

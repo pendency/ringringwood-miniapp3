@@ -1,0 +1,78 @@
+<!-- admin-category.wxml -->
+<!-- 分类管理页面 -->
+<!-- Requirements: 1.1, 1.2, 1.3, 1.4 -->
+<view class="container">
+  <!-- 导航栏 -->
+  <navigation-bar title="分类管理" showBack="{{true}}" bindback="navigateBack" />
+  
+  <!-- 内容区域 -->
+  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <view class="search-input-wrapper">
+        <input 
+          class="search-input" 
+          placeholder="搜索分类名称" 
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearch"
+        />
+        <view class="search-icon" bindtap="onSearch">🔍</view>
+      </view>
+      <button class="btn-add" bindtap="goToAddCategory">+ 新增</button>
+    </view>
+
+    <!-- 加载中提示 -->
+    <view class="loading" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+
+    <!-- 错误提示 -->
+    <view class="error-section" wx:if="{{loadError && !loading}}">
+      <view class="error-message">{{loadError}}</view>
+      <button class="btn-retry" bindtap="loadCategories">重试</button>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && !loadError && filteredCategories.length === 0}}">
+      <view class="empty-icon">📂</view>
+      <view class="empty-text">{{searchKeyword ? '未找到匹配的分类' : '暂无分类数据'}}</view>
+      <button class="btn-add-empty" bindtap="goToAddCategory" wx:if="{{!searchKeyword}}">添加第一个分类</button>
+    </view>
+
+    <!-- 分类列表 -->
+    <view class="category-list" wx:if="{{!loading && !loadError && filteredCategories.length > 0}}">
+      <view 
+        class="category-item" 
+        wx:for="{{filteredCategories}}" 
+        wx:key="_id"
+      >
+        <view class="category-info" bindtap="goToEditCategory" data-id="{{item._id}}">
+          <view class="category-icon" wx:if="{{item.icon}}">
+            <image src="{{item.icon}}" mode="aspectFit" />
+          </view>
+          <view class="category-icon placeholder" wx:else>📁</view>
+          <view class="category-details">
+            <view class="category-name">{{item.name}}</view>
+            <view class="category-desc">{{item.description || '暂无描述'}}</view>
+            <view class="category-meta">
+              <text class="meta-item">排序: {{item.order}}</text>
+              <text class="meta-item status-{{item.status === 1 ? 'active' : 'inactive'}}">
+                {{item.status === 1 ? '启用' : '禁用'}}
+              </text>
+            </view>
+          </view>
+        </view>
+        <view class="category-actions">
+          <button class="btn-action btn-edit" bindtap="goToEditCategory" data-id="{{item._id}}">编辑</button>
+          <button class="btn-action btn-delete" bindtap="confirmDeleteCategory" data-id="{{item._id}}" data-name="{{item.name}}">删除</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 列表统计 -->
+    <view class="list-footer" wx:if="{{!loading && !loadError && filteredCategories.length > 0}}">
+      <text>共 {{filteredCategories.length}} 个分类</text>
+    </view>
+  </view>
+</view>

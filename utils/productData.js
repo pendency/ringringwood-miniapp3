@@ -1,9 +1,11 @@
 // utils/productData.js
 // 产品数据管理模块，供首页和分类页共用
+// Requirements: 9.3, 9.4 - 数据缓存和缓存过期刷新
 
 const mockData = require('./mock-data.js');
 import cloudProductData from './cloudProductData.js';
 const { DEFAULT_IMAGES, PAGINATION_CONFIG } = require('../config/app-config.js');
+const cacheManager = require('./cacheManager.js');
 
 // 云开发数据管理器
 class CloudProductDataManager {
@@ -97,8 +99,25 @@ class CloudProductDataManager {
    * 获取轮播图列表（云开发版本）
    */
   async getBannerList() {
-    // 轮播图暂时使用mock数据
-    return mockData.getBannerList();
+    if (!this.useCloud) {
+      return mockData.getBannerList();
+    }
+
+    try {
+      const result = await this.callCloudFunction('getBanners', { status: 1 });
+      // 映射字段名：云函数返回 image，前端需要 imageUrl
+      const banners = (result.data || []).map(banner => ({
+        ...banner,
+        imageUrl: banner.image || banner.imageUrl || '',
+        id: banner._id || banner.id
+      }));
+      return {
+        data: banners
+      };
+    } catch (error) {
+      console.warn('云开发获取轮播图失败，使用mock数据:', error);
+      return mockData.getBannerList();
+    }
   }
 }
 
@@ -115,11 +134,20 @@ class ProductDataManager {
 
   /**
    * 获取热门产品列表
+   * Requirements: 9.3, 9.4 - 缓存热门产品数据
    * @param {Object} options - 查询选项
    * @param {Number} options.limit - 限制返回数量
    * @returns {Promise<Array>} 产品列表
    */
   async getHotProducts(options = {}) {
+    // 尝试从缓存获取 - Requirements 9.3
+    const cacheKey = cacheManager.KEYS.HOT_PRODUCTS;
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('[ProductData] 从缓存获取热门产品');
+      return this.addFavoriteStatus(cachedData);
+    }
+
     try {
       // 🆕 优先从云数据库获取数据
       if (this.useCloudDB) {
@@ -130,6 +158,8 @@ class ProductDataManager {
         
         if (result.success) {
           console.log('从云数据库获取热门产品:', result.data.length);
+          // 缓存热门产品数据 - Requirements 9.3
+          cacheManager.set(cacheKey, result.data);
           return this.addFavoriteStatus(result.data);
         }
       }
@@ -140,7 +170,10 @@ class ProductDataManager {
         limit: options.limit || PAGINATION_CONFIG.hotProductsLimit 
       });
       // 转换数据格式以确保字段一致性
-      return this.transformProductsForDisplay(result.data);
+      const products = this.transformProductsForDisplay(result.data);
+      // 缓存热门产品数据 - Requirements 9.3
+      cacheManager.set(cacheKey, products);
+      return products;
     } catch (error) {
       console.error('获取热门产品失败', error);
       return this.getFallbackHotProducts();
@@ -149,17 +182,114 @@ class ProductDataManager {
 
   /**
    * 获取分类列表
+   * Requirements: 9.3, 9.4 - 缓存分类数据，支持缓存过期刷新
    * @returns {Promise<Array>} 分类列表
    */
   async getCategories() {
+    // 尝试从缓存获取 - Requirements 9.3
+    const cacheKey = cacheManager.KEYS.CATEGORIES;
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('[ProductData] 从缓存获取分类列表');
+      return cachedData;
+    }
+
     try {
-      // 🆕 从云数据库获取所有产品，然后提取分类信息
+      // 🆕 通过云函数获取分类数据（绕过客户端权限限制）
       if (this.useCloudDB) {
+        try {
+          console.log('[ProductData] 通过云函数获取分类数据');
+          const result = await wx.cloud.callFunction({
+            name: 'productManager',
+            data: {
+              action: 'getCategories',
+              data: {
+                includeDisabled: false
+              }
+            }
+          });
+
+          console.log('[ProductData] 云函数返回结果:', JSON.stringify(result.result));
+
+          if (result.result && result.result.success && result.result.data && result.result.data.length > 0) {
+            const categories = result.result.data.map(cat => ({
+              _id: cat._id,
+              id: cat._id,
+              name: cat.name || '',
+              description: cat.description || this.getCategoryDescription(cat.name),
+              icon: cat.icon || '',
+              image: cat.image || '',
+              imageUrl: cat.image || this.getCategoryImageUrl(cat.name),
+              order: cat.order !== undefined ? cat.order : 999,
+              status: cat.status !== undefined ? cat.status : 1
+            }));
+            
+            console.log('[ProductData] 从云函数获取分类列表:', categories.length);
+            console.log('[ProductData] 分类排序:', categories.map(c => `${c.name}(order:${c.order})`).join(' -> '));
+            
+            // 缓存分类数据 - Requirements 9.3
+            cacheManager.set(cacheKey, categories);
+            
+            return categories;
+          }
+        } catch (cloudError) {
+          console.warn('[ProductData] 云函数获取分类失败，尝试直接查询数据库:', cloudError);
+        }
+
+        // 备用方案：直接查询数据库
+        try {
+          const db = wx.cloud.database();
+          const result = await db.collection('categories')
+            .where({
+              status: 1  // 只获取启用的分类
+            })
+            .orderBy('order', 'asc')  // 按排序权重升序
+            .limit(100)
+            .get();
+          
+          console.log('[ProductData] 从数据库获取分类原始数据:', JSON.stringify(result.data));
+          
+          if (result.data && result.data.length > 0) {
+            const categories = result.data.map(cat => ({
+              _id: cat._id,
+              id: cat._id,
+              name: cat.name || '',
+              description: cat.description || this.getCategoryDescription(cat.name),
+              icon: cat.icon || '',
+              image: cat.image || '',
+              imageUrl: cat.image || this.getCategoryImageUrl(cat.name),
+              order: cat.order !== undefined ? cat.order : 999,
+              status: cat.status !== undefined ? cat.status : 1
+            }));
+            
+            // 二次排序，确保排序正确（数据库 orderBy 可能不完全可靠）
+            categories.sort((a, b) => {
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              return orderA - orderB;
+            });
+            
+            console.log('[ProductData] 从 categories 集合获取分类列表:', categories.length);
+            console.log('[ProductData] 分类排序:', categories.map(c => `${c.name}(order:${c.order})`).join(' -> '));
+            
+            // 缓存分类数据 - Requirements 9.3
+            cacheManager.set(cacheKey, categories);
+            
+            return categories;
+          }
+        } catch (dbError) {
+          console.warn('[ProductData] 从 categories 集合获取分类失败，尝试从产品数据提取:', dbError);
+        }
+        
+        // 备用方案：从产品数据中提取分类信息
         const result = await cloudProductData.getProducts();
         
         if (result.success) {
           const categories = this.extractCategoriesFromProducts(result.data);
-          console.log('从云数据库提取分类列表:', categories.length);
+          console.log('[ProductData] 从产品数据提取分类列表:', categories.length);
+          
+          // 缓存分类数据 - Requirements 9.3
+          cacheManager.set(cacheKey, categories);
           
           return categories;
         }
@@ -172,17 +302,20 @@ class ProductDataManager {
         imageUrl: this.getCategoryImageUrl(cat.name)
       }));
       
-      console.log('获取到的分类列表:', categories);
+      console.log('[ProductData] 获取到的分类列表:', categories);
+      
+      // 缓存分类数据 - Requirements 9.3
+      cacheManager.set(cacheKey, categories);
       
       // 检查每个分类是否有对应的产品
       for (const category of categories) {
         const productCount = await this.getProductCountByCategory(category._id);
-        console.log(`分类 ${category.name} (${category._id}) 有 ${productCount} 个产品`);
+        console.log(`[ProductData] 分类 ${category.name} (${category._id}) 有 ${productCount} 个产品`);
       }
       
       return categories;
     } catch (error) {
-      console.error('获取分类列表失败', error);
+      console.error('[ProductData] 获取分类列表失败', error);
       return [];
     }
   }
@@ -204,9 +337,11 @@ class ProductDataManager {
 
   /**
    * 根据分类获取产品列表
+   * Requirements: 9.3, 9.4 - 缓存分类产品数据
    * @param {String} categoryId - 分类ID
    * @param {Object} options - 查询选项
    * @param {Number} options.limit - 限制返回数量
+   * @param {Number} options.offset - 偏移量（用于分页）- Requirements 2.3
    * @returns {Promise<Object>} 包含产品列表和总数的对象
    */
   async getProductsByCategory(categoryId, options = {}) {
@@ -218,16 +353,41 @@ class ProductDataManager {
         return { products: [], total: 0 };
       }
       
+      // 计算分页参数 - Requirements 2.3
+      const limit = options.limit || 10;
+      const offset = options.offset || 0;
+      const page = Math.floor(offset / limit) + 1;
+      
+      console.log('分页参数计算:', { limit, offset, page });
+
+      // 尝试从缓存获取（仅缓存第一页数据）- Requirements 9.3
+      const cacheKey = cacheManager.generateKey(cacheManager.KEYS.PRODUCTS_PREFIX, categoryId);
+      if (page === 1) {
+        const cachedData = cacheManager.get(cacheKey);
+        if (cachedData) {
+          console.log('[ProductData] 从缓存获取分类产品:', categoryId);
+          return {
+            products: this.addFavoriteStatus(cachedData.products),
+            total: cachedData.total
+          };
+        }
+      }
+      
       // 🆕 优先从云数据库获取数据
       if (this.useCloudDB) {
         const result = await cloudProductData.getProducts({
           categoryId: categoryId,
-          limit: options.limit || 100,
-          offset: options.offset || 0
+          limit: limit,
+          page: page
         });
         
         if (result.success) {
           console.log('从云数据库获取分类产品:', result.data.length, '/', result.total);
+          
+          // 缓存第一页数据 - Requirements 9.3
+          if (page === 1) {
+            cacheManager.set(cacheKey, { products: result.data, total: result.total });
+          }
           
           // 添加收藏状态
           const productsWithFavorite = this.addFavoriteStatus(result.data);
@@ -242,11 +402,17 @@ class ProductDataManager {
       // 备用：使用云开发数据
       const result = await cloudDataManager.getProductList({ 
         categoryId: categoryId,
-        limit: options.limit || 100
+        limit: limit,
+        page: page
       });
       
       console.log('cloudDataManager.getProductList 返回结果:', result);
       console.log('获取到产品数量:', result.data ? result.data.length : 0);
+      
+      // 缓存第一页数据 - Requirements 9.3
+      if (page === 1) {
+        cacheManager.set(cacheKey, { products: result.data || [], total: result.total || 0 });
+      }
       
       // 标记已收藏的产品
       const productsWithFavorite = this.addFavoriteStatus(result.data || []);
@@ -314,13 +480,22 @@ class ProductDataManager {
 
   /**
    * 获取轮播图列表
+   * Requirements: 9.3, 9.4 - 缓存轮播图数据
    * @returns {Promise<Array>} 轮播图列表
    */
   async getBanners() {
+    // 尝试从缓存获取 - Requirements 9.3
+    const cacheKey = cacheManager.KEYS.BANNERS;
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('[ProductData] 从缓存获取轮播图');
+      return cachedData;
+    }
+
     try {
       const result = await cloudDataManager.getBannerList();
       // 确保轮播图数据中的id字段与产品的_id格式一致
-      return result.data.map(banner => {
+      const banners = result.data.map(banner => {
         // 如果id不是以'prod_'开头，则添加前缀
         if (banner.id && !String(banner.id).startsWith('prod_')) {
           banner._id = 'prod_' + banner.id;
@@ -329,6 +504,11 @@ class ProductDataManager {
         }
         return banner;
       });
+      
+      // 缓存轮播图数据 - Requirements 9.3
+      cacheManager.set(cacheKey, banners);
+      
+      return banners;
     } catch (error) {
       console.error('获取轮播图失败', error);
       return this.getFallbackBanners();
@@ -374,8 +554,8 @@ class ProductDataManager {
           imageUrls: product.imageUrls || (product.image ? [product.image] : []), // 保持 imageUrls 用于其他用途
           detailImages: [], // 所有图片都作为主图使用
           params: product.params || [],
-          // 🔧 修复：正确处理视频数据 - 优先使用临时URL，回退到原始URL
-          features: this.createFeaturesFromVideo(product.videoUrlTemp || product.videoUrl || product.video), 
+          // 🔧 修复：保留原始 features，如果有视频则添加到 features 中
+          features: this.mergeVideoToFeatures(product.features || [], product.videoUrlTemp || product.videoUrl || product.video), 
           videos: (product.videoUrlTemp || product.videoUrl || product.video) ? [{
             title: '产品展示视频',
             url: product.videoUrlTemp || product.videoUrl || product.video
@@ -554,19 +734,19 @@ class ProductDataManager {
         _id: 'prod_2',
         name: '冰晶玉石大板',
         description: '晶莹剔透，质感非凡',
-        imageUrls: ['/images/wood2.jpg']
+        imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/wood/wood2.jpeg']
       },
       {
         _id: 'prod_3',
         name: '胡桃木小板',
         description: '精致小巧，实用美观',
-        imageUrls: ['/images/wood3.jpg']
+        imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/wood/wood3.jpeg']
       },
       {
         _id: 'prod_4',
         name: '冰晶玉石小板',
         description: '精工细作，光彩夺目',
-        imageUrls: ['/images/wood4.jpg']
+        imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/wood/wood4.jpeg']
       }
     ];
   }
@@ -580,35 +760,35 @@ class ProductDataManager {
       {
         id: 'prod_1',
         _id: 'prod_1', // 添加_id字段，确保与产品ID格式一致
-        imageUrl: '/images/banner1.jpeg',
+        imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner1.jpeg',
         title: '✧ 原木经典',
         subtitle: '厚实整板，稳重大气'
       },
       {
         id: 'prod_2',
         _id: 'prod_2',
-        imageUrl: '/images/banner2.jpeg',
+        imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner2.jpeg',
         title: '✧ 树脂美学',
         subtitle: '光影流动，自带焦点感'
       },
       {
         id: 'prod_3',
         _id: 'prod_3',
-        imageUrl: '/images/banner3.jpeg',
+        imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner3.jpeg',
         title: '✦ 玩趣设计',
         subtitle: '风格桌面，空间主角'
       },
       {
         id: 'prod_4',
         _id: 'prod_4',
-        imageUrl: '/images/banner4.jpeg',
+        imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner4.jpeg',
         title: '✦ 高定专属',
         subtitle: '材质尺寸自由搭配'
       },
       {
         id: 'prod_5',
         _id: 'prod_5',
-        imageUrl: '/images/banner5.jpeg',
+        imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner5.jpeg',
         title: '✦ 桌架专区',
         subtitle: '多样款式，自由组合'
       }
@@ -660,6 +840,15 @@ class ProductDataManager {
       'cat_frame': '桌架专区'
     };
 
+    // 预定义的分类排序权重 - Requirements 2.5
+    const categoryOrderWeights = {
+      '原木经典': 1,
+      '树脂美学': 2,
+      '玩趣设计': 3,
+      '高定专属': 4,
+      '桌架专区': 5
+    };
+
     products.forEach(product => {
       if (product.categoryId && product.isVisible !== false) {
         const categoryId = product.categoryId;
@@ -672,6 +861,9 @@ class ProductDataManager {
             name: categoryName,
             description: this.getCategoryDescription(categoryName),
             imageUrl: this.getCategoryImageUrl(categoryName),
+            // 添加排序权重字段 - Requirements 2.5
+            order: categoryOrderWeights[categoryName] || 999,
+            status: 1, // 1: 启用, 0: 禁用
             productCount: 0
           });
         }
@@ -681,21 +873,14 @@ class ProductDataManager {
       }
     });
 
+    // 按排序权重排序 - Requirements 2.5
     return Array.from(categoryMap.values()).sort((a, b) => {
-      // 按预定义顺序排序
-      const order = ['原木经典', '树脂美学', '玩趣设计', '高定专属', '桌架专区'];
-      const indexA = order.indexOf(a.name);
-      const indexB = order.indexOf(b.name);
-      
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      } else if (indexA !== -1) {
-        return -1;
-      } else if (indexB !== -1) {
-        return 1;
-      } else {
-        return a.name.localeCompare(b.name);
+      // 优先按order字段排序
+      if (a.order !== b.order) {
+        return a.order - b.order;
       }
+      // order相同时按名称排序
+      return a.name.localeCompare(b.name);
     });
   }
 
@@ -716,6 +901,38 @@ class ProductDataManager {
       video: videoUrl.trim(),
       poster: ''
     }];
+  }
+
+  /**
+   * 🆕 合并视频到features数组（保留原有features）
+   * @param {Array} existingFeatures - 现有的features数组
+   * @param {String} videoUrl - 视频URL（可能是临时URL或云存储URL）
+   * @returns {Array} 合并后的features数组
+   */
+  mergeVideoToFeatures(existingFeatures, videoUrl) {
+    // 复制现有features
+    const features = Array.isArray(existingFeatures) ? [...existingFeatures] : [];
+    
+    // 如果没有视频URL，直接返回现有features
+    if (!videoUrl || typeof videoUrl !== 'string' || videoUrl.trim() === '') {
+      return features;
+    }
+    
+    // 检查是否已经有视频类型的feature
+    const hasVideoFeature = features.some(f => f.type === 'video' && f.video);
+    
+    // 如果没有视频feature，添加一个
+    if (!hasVideoFeature) {
+      features.push({
+        type: 'video',
+        title: '产品展示视频',
+        description: '产品视频展示',
+        video: videoUrl.trim(),
+        poster: ''
+      });
+    }
+    
+    return features;
   }
 
   /**
@@ -764,6 +981,62 @@ class ProductDataManager {
       
       return transformed;
     });
+  }
+
+  /**
+   * 清除所有缓存
+   * Requirements: 9.4 - 支持手动刷新缓存
+   */
+  clearCache() {
+    console.log('[ProductData] 开始清除所有缓存');
+    cacheManager.clearAll();
+    console.log('[ProductData] 所有缓存已清除，缓存统计:', cacheManager.getStats());
+  }
+
+  /**
+   * 清除过期缓存
+   * Requirements: 9.4 - 缓存过期刷新机制
+   */
+  clearExpiredCache() {
+    cacheManager.clearExpired();
+    console.log('[ProductData] 过期缓存已清除');
+  }
+
+  /**
+   * 强制刷新分类数据
+   * Requirements: 9.4 - 缓存过期刷新机制
+   */
+  async refreshCategories() {
+    cacheManager.remove(cacheManager.KEYS.CATEGORIES);
+    return await this.getCategories();
+  }
+
+  /**
+   * 强制刷新热门产品数据
+   * Requirements: 9.4 - 缓存过期刷新机制
+   */
+  async refreshHotProducts(options = {}) {
+    cacheManager.remove(cacheManager.KEYS.HOT_PRODUCTS);
+    return await this.getHotProducts(options);
+  }
+
+  /**
+   * 强制刷新分类产品数据
+   * Requirements: 9.4 - 缓存过期刷新机制
+   * @param {String} categoryId - 分类ID
+   */
+  async refreshCategoryProducts(categoryId, options = {}) {
+    const cacheKey = cacheManager.generateKey(cacheManager.KEYS.PRODUCTS_PREFIX, categoryId);
+    cacheManager.remove(cacheKey);
+    return await this.getProductsByCategory(categoryId, options);
+  }
+
+  /**
+   * 获取缓存统计信息
+   * @returns {Object} 缓存统计
+   */
+  getCacheStats() {
+    return cacheManager.getStats();
   }
 }
 

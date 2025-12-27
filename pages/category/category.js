@@ -1,4 +1,5 @@
 // category.js
+// Requirements: 2.2, 2.3, 2.4 - 分类产品筛选和分页
 const productData = require('../../utils/productData.js');
 
 Page({
@@ -11,10 +12,11 @@ Page({
     categories: [], // 分类列表
     products: [], // 产品列表
     loading: false,
+    loadingMore: false, // 加载更多状态 - Requirements 2.3
     totalProducts: 0, // 总产品数
-    hasMoreProducts: false, // 是否有更多产品
-    currentPage: 1, // 当前页码
-    pageSize: 100, // 每页显示的产品数量
+    hasMoreProducts: false, // 是否有更多产品 - Requirements 2.3
+    currentPage: 1, // 当前页码 - Requirements 2.3
+    pageSize: 10, // 每页显示的产品数量 - Requirements 2.3 (改为合理的分页大小)
     scrollIntoView: '' // 用于scroll-view的scroll-into-view属性
   },
   
@@ -38,36 +40,32 @@ Page({
   
   // 页面显示时检查是否有指定分类
   onShow: function() {
-    console.log('分类页 onShow');
+    console.log('[Category] onShow 触发');
     
-    // 获取全局数据中的分类类型
+    // 获取全局数据中的分类类型和ID
     const app = getApp();
-    if (app && app.globalData && app.globalData.eventChannel && app.globalData.eventChannel.categoryType) {
+    if (app && app.globalData && app.globalData.eventChannel && 
+        (app.globalData.eventChannel.categoryType || app.globalData.eventChannel.categoryId)) {
       const categoryType = app.globalData.eventChannel.categoryType;
-      console.log('分类页接收到分类类型:', categoryType);
+      const categoryId = app.globalData.eventChannel.categoryId; // 🆕 获取分类ID
+      console.log('[Category] 接收到分类类型:', categoryType, '分类ID:', categoryId);
       
       // 清除全局数据，避免下次进入页面仍然跳转
       app.globalData.eventChannel.categoryType = null;
+      app.globalData.eventChannel.categoryId = null;
       
-      // 如果分类数据已加载，直接查找并切换
-      if (this.data.categories && this.data.categories.length > 0) {
-        console.log('分类数据已加载，直接查找并切换');
-        // 延迟执行，确保UI已经准备好
-        setTimeout(() => {
-          this.findAndSwitchCategory(categoryType);
-        }, 300);
-      } else {
-        console.log('分类数据尚未加载，稍后将切换');
-        // 保存要切换的分类名称，等分类加载完成后再切换
-        this.pendingSwitchCategory = categoryType;
-        
-        // 确保分类数据加载
-        if (!this.loadingCategories) {
-          this.loadCategories();
-        }
-      }
+      // 🆕 保存要切换的分类信息（优先使用ID）
+      this.pendingSwitchCategoryId = categoryId;
+      this.pendingSwitchCategory = categoryType;
+      
+      // 🆕 强制刷新分类数据，确保获取最新的分类名称和排序
+      console.log('[Category] 强制刷新分类数据（有指定分类）');
+      this.loadCategoriesWithRefresh();
     } else {
-      console.log('分类页未接收到分类类型');
+      console.log('[Category] 未接收到分类类型，强制刷新分类数据');
+      // 每次显示页面时强制刷新分类数据，确保获取最新排序
+      // 使用 refreshCategories 方法，它会先清除缓存再获取数据
+      this.loadCategoriesWithRefresh();
     }
   },
   
@@ -186,10 +184,14 @@ Page({
     try {
       this.setData({ loading: true });
       
-      // 使用公共产品数据模块
+      console.log('[Category] 开始加载分类数据');
+      
+      // 使用公共产品数据模块 - Requirements 2.1
       const categories = await productData.getCategories();
       
-      console.log('分类数据加载完成，共', categories.length, '个分类');
+      console.log('[Category] 分类数据加载完成，共', categories.length, '个分类');
+      // 验证分类按排序权重排序 - Requirements 2.5
+      console.log('[Category] 分类排序顺序:', categories.map(cat => `${cat.name}(order:${cat.order})`).join(' -> '));
       
       this.setData({
         categories: categories,
@@ -228,7 +230,81 @@ Page({
     }
   },
 
-  // 根据分类加载产品
+  // 强制刷新分类数据（清除缓存后重新加载）
+  async loadCategoriesWithRefresh() {
+    // 设置加载状态标记，避免重复加载
+    this.loadingCategories = true;
+    
+    try {
+      this.setData({ loading: true });
+      
+      console.log('[Category] 开始强制刷新分类数据');
+      
+      // 使用 refreshCategories 方法，它会先清除缓存再获取数据
+      const categories = await productData.refreshCategories();
+      
+      console.log('[Category] 分类数据刷新完成，共', categories.length, '个分类');
+      // 验证分类按排序权重排序 - Requirements 2.5
+      console.log('[Category] 分类排序顺序:', categories.map(cat => `${cat.name}(order:${cat.order})`).join(' -> '));
+      
+      this.setData({
+        categories: categories,
+        loading: false
+      });
+      
+      // 🆕 检查是否有待切换的分类（优先使用ID）
+      if (this.pendingSwitchCategoryId || this.pendingSwitchCategory) {
+        const categoryId = this.pendingSwitchCategoryId;
+        const categoryName = this.pendingSwitchCategory;
+        this.pendingSwitchCategoryId = null; // 清除待切换标记
+        this.pendingSwitchCategory = null;
+        console.log('分类加载完成，处理待切换分类，ID:', categoryId, '名称:', categoryName);
+        
+        // 延迟执行，确保UI更新完成
+        setTimeout(() => {
+          // 🆕 优先使用ID查找分类
+          if (categoryId) {
+            const targetIndex = categories.findIndex(cat => cat._id === categoryId);
+            if (targetIndex !== -1) {
+              console.log('通过ID找到分类，索引:', targetIndex);
+              this.setData({ activeTab: targetIndex });
+              this.scrollToCategoryItem(targetIndex);
+              this.loadProductsByCategory(targetIndex);
+              return;
+            }
+          }
+          // 如果ID查找失败，使用名称查找
+          this.findAndSwitchCategory(categoryName);
+        }, 200);
+        
+        return; // 已尝试切换到指定分类，不需要加载默认分类
+      }
+      
+      // 如果有分类且没有切换到指定分类，默认选中第一个
+      if (this.data.categories.length > 0) {
+        // 同时刷新产品缓存
+        await productData.refreshCategoryProducts(this.data.categories[0]._id, {
+          limit: this.data.pageSize,
+          offset: 0
+        });
+        this.loadProductsByCategory(0);
+      }
+    } catch (error) {
+      console.error('刷新分类失败', error);
+      this.setData({ loading: false });
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
+    } finally {
+      // 清除加载状态标记
+      this.loadingCategories = false;
+    }
+  },
+
+  // 根据分类加载产品 - Requirements 2.2, 2.4
+  // 当用户选择某个分类时，筛选并显示该分类下的所有产品
+  // 当用户切换分类时，清空当前列表并加载新分类产品
   async loadProductsByCategory(categoryIndex) {
     try {
       console.log('loadProductsByCategory 开始，索引:', categoryIndex);
@@ -246,10 +322,12 @@ Page({
 
       console.log('开始加载分类产品:', category.name, '分类ID:', category._id);
 
+      // Requirements 2.4: 切换分类时清空当前列表
       this.setData({
         loading: true,
+        loadingMore: false,
         currentPage: 1,
-        products: []
+        products: [] // 清空当前列表
       });
 
       // 检查分类ID是否有效
@@ -268,10 +346,14 @@ Page({
         return;
       }
 
-      // 使用公共产品数据模块
-      console.log('调用 productData.getProductsByCategory，参数:', category._id, { limit: this.data.pageSize });
+      // 使用公共产品数据模块 - Requirements 2.2: 按分类筛选产品
+      console.log('调用 productData.getProductsByCategory，参数:', category._id, { 
+        limit: this.data.pageSize,
+        offset: 0 
+      });
       const result = await productData.getProductsByCategory(category._id, {
-        limit: this.data.pageSize
+        limit: this.data.pageSize,
+        offset: 0
       });
 
       console.log('获取到产品结果:', result);
@@ -293,7 +375,7 @@ Page({
           // 更新产品数据，同时保持activeTab的值
           this.setData({
             products: fallbackResult.products,
-            activeTab: categoryIndex, // 确保activeTab与当前加载的分类一致
+            activeTab: categoryIndex,
             totalProducts: fallbackResult.total || fallbackResult.products.length,
             hasMoreProducts: false,
             loading: false
@@ -304,26 +386,102 @@ Page({
         }
       }
       
+      // 计算是否有更多产品 - Requirements 2.3
+      const loadedCount = result.products ? result.products.length : 0;
+      const totalCount = result.total || 0;
+      const hasMore = loadedCount < totalCount;
+      
       // 更新产品数据，同时保持activeTab的值
       this.setData({
         products: result.products || [],
-        activeTab: categoryIndex, // 确保activeTab与当前加载的分类一致
-        totalProducts: result.total || 0,
-        hasMoreProducts: result.total > (result.products ? result.products.length : 0),
+        activeTab: categoryIndex,
+        totalProducts: totalCount,
+        hasMoreProducts: hasMore,
         loading: false
       });
       
       console.log('分类页加载完成，当前activeTab:', categoryIndex);
-      
-      console.log(`加载${category.name}分类产品: ${result.products ? result.products.length : 0}/${result.total || 0}`);
+      console.log(`加载${category.name}分类产品: ${loadedCount}/${totalCount}, 还有更多: ${hasMore}`);
     } catch (error) {
       console.error('加载产品失败', error);
-      this.setData({ loading: false });
+      this.setData({ loading: false, loadingMore: false });
       wx.showToast({
         title: '加载失败',
         icon: 'none'
       });
     }
+  },
+
+  // 加载更多产品 - Requirements 2.3: 分页加载更多产品
+  async loadMoreProducts() {
+    // 检查是否可以加载更多
+    if (this.data.loadingMore || this.data.loading || !this.data.hasMoreProducts) {
+      console.log('无法加载更多:', {
+        loadingMore: this.data.loadingMore,
+        loading: this.data.loading,
+        hasMoreProducts: this.data.hasMoreProducts
+      });
+      return;
+    }
+
+    const category = this.data.categories[this.data.activeTab];
+    if (!category || !category._id) {
+      console.error('当前分类无效，无法加载更多');
+      return;
+    }
+
+    try {
+      console.log('开始加载更多产品，当前页:', this.data.currentPage);
+      
+      this.setData({ loadingMore: true });
+
+      const nextPage = this.data.currentPage + 1;
+      const offset = this.data.currentPage * this.data.pageSize;
+
+      // 调用数据接口获取下一页数据
+      const result = await productData.getProductsByCategory(category._id, {
+        limit: this.data.pageSize,
+        offset: offset
+      });
+
+      console.log('加载更多结果:', result);
+      console.log('新增产品数量:', result.products ? result.products.length : 0);
+
+      if (result.products && result.products.length > 0) {
+        // 合并新数据到现有列表
+        const newProducts = [...this.data.products, ...result.products];
+        const hasMore = newProducts.length < (result.total || 0);
+
+        this.setData({
+          products: newProducts,
+          currentPage: nextPage,
+          hasMoreProducts: hasMore,
+          loadingMore: false
+        });
+
+        console.log(`加载更多完成: 第${nextPage}页, 总计${newProducts.length}/${result.total}个产品, 还有更多: ${hasMore}`);
+      } else {
+        // 没有更多数据
+        this.setData({
+          hasMoreProducts: false,
+          loadingMore: false
+        });
+        console.log('没有更多产品了');
+      }
+    } catch (error) {
+      console.error('加载更多产品失败:', error);
+      this.setData({ loadingMore: false });
+      wx.showToast({
+        title: '加载失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 滚动到底部触发加载更多 - Requirements 2.3
+  onScrollToLower() {
+    console.log('滚动到底部，触发加载更多');
+    this.loadMoreProducts();
   },
   
   // 切换分类
@@ -660,9 +818,10 @@ Page({
       failedUrl
     });
     
-    // 设置默认图片
+    // 设置默认图片 - 使用云存储图片
     const products = this.data.products;
     if (products && productIndex !== undefined && productIndex < products.length) {
+      // 使用云存储默认图片
       const defaultImage = 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/default-product.jpeg';
       
       if (products[productIndex].imageUrls && products[productIndex].imageUrls.length > 0) {
@@ -671,13 +830,6 @@ Page({
         
         this.setData({
           products: products
-        });
-        
-        // 显示用户友好的提示
-        wx.showToast({
-          title: '图片加载失败，已显示默认图片',
-          icon: 'none',
-          duration: 2000
         });
       }
     }
@@ -866,11 +1018,12 @@ Page({
   // 跳转到分类页
   navigateToCategory: function(e) {
     const type = e.currentTarget.dataset.type;
+    const categoryId = e.currentTarget.dataset.id; // 🆕 获取分类ID
     this.setData({
       showMenu: false
     });
     
-    console.log('从分类页跳转到分类页，分类类型:', type);
+    console.log('从分类页跳转到分类页，分类类型:', type, '分类ID:', categoryId);
     
     // 确保全局数据对象存在
     if (!getApp().globalData) {
@@ -882,7 +1035,15 @@ Page({
     
     // 如果已经在分类页面，直接切换到对应分类
     const categories = this.data.categories;
-    const targetIndex = categories.findIndex(cat => cat.name === type);
+    
+    // 🆕 优先使用分类ID查找，如果没有ID则使用名称
+    let targetIndex = -1;
+    if (categoryId) {
+      targetIndex = categories.findIndex(cat => cat._id === categoryId);
+    }
+    if (targetIndex === -1) {
+      targetIndex = categories.findIndex(cat => cat.name === type);
+    }
     
     if (targetIndex !== -1) {
       console.log('在当前页面切换到分类:', type, '索引:', targetIndex);

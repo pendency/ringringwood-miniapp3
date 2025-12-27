@@ -36,7 +36,9 @@ class CloudProductData {
             isNew: options.isNew,
             isRecommended: options.isRecommended,
             keyword: options.keyword,
-            page: options.page || 1
+            page: options.page || 1,
+            // 🆕 默认只获取上架产品（status=1），除非明确指定
+            status: options.status !== undefined ? options.status : 1
           }
         }
       });
@@ -57,6 +59,20 @@ class CloudProductData {
       // 数据规范化处理
       const normalizedProducts = this.normalizeProducts(products);
       console.log('🔄 [cloudProductData] 产品数据规范化完成');
+
+      // 🆕 按排序权重排序（前端备用排序，确保排序生效）
+      normalizedProducts.sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 999;
+        const orderB = b.order !== undefined ? b.order : 999;
+        if (orderA !== orderB) {
+          return orderA - orderB; // 升序
+        }
+        // order相同时按创建时间降序
+        const timeA = a.createTime ? new Date(a.createTime).getTime() : 0;
+        const timeB = b.createTime ? new Date(b.createTime).getTime() : 0;
+        return timeB - timeA;
+      });
+      console.log('🔄 [cloudProductData] 产品排序完成');
 
       // 获取临时文件URL
       const productsWithTempUrls = await this.getTempFileUrls(normalizedProducts);
@@ -169,6 +185,7 @@ class CloudProductData {
 
         // 数字规范化
         normalized.sortPriority = this.normalizeNumber(product.sortPriority, 999);
+        normalized.order = this.normalizeNumber(product.order, 999); // 🆕 排序权重规范化
         
         if (product.price && typeof product.price === 'string' && !isNaN(parseFloat(product.price))) {
           normalized.price = parseFloat(product.price);
@@ -181,16 +198,20 @@ class CloudProductData {
         // 🔧 修复：处理图片URL - 优先使用云函数已构建的 imageUrls
         let imageUrls = [];
         
-        if (product.imageUrls && Array.isArray(product.imageUrls)) {
+        if (product.imageUrls && Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
           // 如果云函数已经构建了 imageUrls 数组，直接使用
           imageUrls = product.imageUrls.map(url => this.cleanFileId(url)).filter(Boolean);
         } else {
-          // 否则从 imageUrl2-10 字段构建（排除 imageUrl1）
-          for (let i = 2; i <= 10; i++) {
+          // 否则从 imageUrl1-10 字段构建（包含 imageUrl1 主图）
+          for (let i = 1; i <= 10; i++) {
             const imageUrl = product[`imageUrl${i}`];
             if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
               imageUrls.push(this.cleanFileId(imageUrl.trim()));
             }
+          }
+          // 如果还是没有图片，尝试使用 image 字段
+          if (imageUrls.length === 0 && product.image) {
+            imageUrls.push(this.cleanFileId(product.image));
           }
         }
         
@@ -317,16 +338,17 @@ class CloudProductData {
       const allFileIds = new Set();
       
       products.forEach(product => {
-        // 收集图片URL
-        if (product.imageUrls && Array.isArray(product.imageUrls)) {
-          product.imageUrls.forEach(url => {
+        // 🔧 修复：收集图片URL - 同时检查 images 和 imageUrls 数组
+        const imageArrays = [product.images, product.imageUrls].filter(arr => arr && Array.isArray(arr));
+        imageArrays.forEach(imageArray => {
+          imageArray.forEach(url => {
             if (url && url.startsWith('cloud://')) {
               // 🆕 修正文件ID格式后再收集
               const correctedUrl = this.correctCloudFileId(url);
               allFileIds.add(correctedUrl);
             }
           });
-        }
+        });
         
         // 收集视频URL - 支持 videoUrl 或 video 字段
         const videoUrl = product.videoUrl || product.video;

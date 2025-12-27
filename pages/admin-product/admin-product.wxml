@@ -1,0 +1,161 @@
+<!-- admin-product.wxml -->
+<!-- 产品管理页面 -->
+<!-- Requirements: 5.1, 5.2, 5.3, 5.4, 5.5 -->
+<view class="container">
+  <!-- 导航栏 -->
+  <navigation-bar title="产品管理" showBack="{{true}}" bindback="navigateBack" />
+  
+  <!-- 内容区域 - 使用scroll-view实现滚动 -->
+  <scroll-view 
+    class="content-container" 
+    style="padding-top: {{contentPaddingTop}}px; height: calc(100vh - {{contentPaddingTop}}px);"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    show-scrollbar="{{true}}"
+    bounces="{{true}}"
+    bindscrolltolower="onReachBottom"
+    lower-threshold="100"
+  >
+    <!-- 搜索和筛选栏 -->
+    <view class="filter-bar">
+      <!-- 搜索框 - Requirements 5.5 -->
+      <view class="search-row">
+        <view class="search-input-wrapper">
+          <input 
+            class="search-input" 
+            placeholder="搜索产品名称" 
+            value="{{searchKeyword}}"
+            bindinput="onSearchInput"
+            bindconfirm="onSearch"
+          />
+          <view class="search-icon" bindtap="onSearch">🔍</view>
+        </view>
+        <button class="btn-add" bindtap="goToAddProduct">+ 新增</button>
+      </view>
+      
+      <!-- 筛选条件 - Requirements 5.4 -->
+      <view class="filter-row">
+        <view class="filter-item">
+          <picker 
+            mode="selector" 
+            range="{{categories}}" 
+            range-key="name"
+            bindchange="onCategoryChange"
+          >
+            <view class="filter-picker">
+              <text>{{selectedCategoryName || '全部分类'}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="filter-item">
+          <picker 
+            mode="selector" 
+            range="{{statusOptions}}" 
+            range-key="label"
+            bindchange="onStatusChange"
+          >
+            <view class="filter-picker">
+              <text>{{selectedStatus === '' ? '全部状态' : (selectedStatus === 1 ? '已上架' : '已下架')}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载中提示 -->
+    <view class="loading" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+
+    <!-- 错误提示 -->
+    <view class="error-section" wx:if="{{loadError && !loading}}">
+      <view class="error-message">{{loadError}}</view>
+      <button class="btn-retry" bindtap="refreshProducts">重试</button>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && !loadError && products.length === 0}}">
+      <view class="empty-icon">📦</view>
+      <view class="empty-text">{{searchKeyword || selectedCategoryId ? '未找到匹配的产品' : '暂无产品数据'}}</view>
+      <button class="btn-add-empty" bindtap="goToAddProduct" wx:if="{{!searchKeyword && !selectedCategoryId}}">添加第一个产品</button>
+    </view>
+
+    <!-- 产品列表 - Requirements 5.1, 5.2 -->
+    <view class="product-list" wx:if="{{!loading && !loadError && products.length > 0}}">
+      <view 
+        class="product-item" 
+        wx:for="{{products}}" 
+        wx:key="_id"
+      >
+        <view class="product-info" bindtap="goToEditProduct" data-id="{{item._id}}">
+          <!-- 产品图片 -->
+          <view class="product-image">
+            <image 
+              src="{{item.imageUrls[0] || item.images[0] || item.imageUrl || '/images/placeholder.png'}}" 
+              mode="aspectFill"
+              wx:if="{{(item.imageUrls && item.imageUrls.length > 0) || (item.images && item.images.length > 0) || item.imageUrl}}"
+            />
+            <view class="image-placeholder" wx:else>📷</view>
+          </view>
+          
+          <!-- 产品详情 -->
+          <view class="product-details">
+            <view class="product-name">{{item.name}}</view>
+            <view class="product-category">分类: {{item.categoryName || item.categoryId || '未分类'}}</view>
+            <view class="product-price">
+              <text class="price-current">
+                {{item.price === 'consult' || item.price === '联系销售' ? '联系销售' : (item.price ? '¥' + item.price : '¥0')}}
+              </text>
+              <text class="price-original" wx:if="{{item.originalPrice && item.originalPrice > 0}}">
+                ¥{{item.originalPrice}}
+              </text>
+            </view>
+            <view class="product-tags">
+              <text class="tag tag-hot" wx:if="{{item.isHot}}">热门</text>
+              <text class="tag tag-new" wx:if="{{item.isNew}}">新品</text>
+              <text class="tag tag-recommend" wx:if="{{item.isRecommended}}">推荐</text>
+              <text class="tag status-{{item.status === 1 ? 'active' : 'inactive'}}">
+                {{item.status === 1 ? '已上架' : '已下架'}}
+              </text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 操作按钮 -->
+        <view class="product-actions">
+          <button 
+            class="btn-action btn-status {{item.status === 1 ? 'btn-offline' : 'btn-online'}}" 
+            bindtap="toggleProductStatus" 
+            data-id="{{item._id}}" 
+            data-status="{{item.status}}"
+          >
+            {{item.status === 1 ? '下架' : '上架'}}
+          </button>
+          <button class="btn-action btn-edit" bindtap="goToEditProduct" data-id="{{item._id}}">编辑</button>
+          <button class="btn-action btn-delete" bindtap="confirmDeleteProduct" data-id="{{item._id}}" data-name="{{item.name}}">删除</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 - Requirements 5.3 -->
+    <view class="load-more" wx:if="{{!loading && !loadError && products.length > 0}}">
+      <view class="loading-more" wx:if="{{loadingMore}}">
+        <text>加载中...</text>
+      </view>
+      <view class="no-more" wx:elif="{{!hasMore}}">
+        <text>没有更多了</text>
+      </view>
+      <button class="btn-load-more" wx:else bindtap="loadMore">加载更多</button>
+    </view>
+
+    <!-- 列表统计 -->
+    <view class="list-footer" wx:if="{{!loading && !loadError && products.length > 0}}">
+      <text>共 {{total}} 个产品，当前显示 {{products.length}} 个</text>
+    </view>
+    
+    <!-- 底部安全区域 -->
+    <view class="safe-area-bottom"></view>
+  </scroll-view>
+</view>

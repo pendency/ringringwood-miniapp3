@@ -119,8 +119,8 @@ const ProductConfig = {
       // 是否使用默认图片替代缺失的图片
       useDefaultImage: true,
       
-      // 默认图片路径
-      defaultImagePath: '/images/products/default-product.jpeg',
+      // 默认图片路径（使用云存储路径）
+      defaultImagePath: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/default-product.jpeg',
       
       // 是否在控制台输出缺失图片警告
       logMissingImages: true

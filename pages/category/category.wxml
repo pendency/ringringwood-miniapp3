@@ -15,21 +15,12 @@
         <view class="menu-item" bindtap="navigateToHome">
           <text>首页</text>
         </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="原木经典">
-          <text>原木经典</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="树脂美学">
-          <text>树脂美学</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="玩趣设计">
-          <text>玩趣设计</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="高定专属">
-          <text>高定专属</text>
-        </view>
-        <view class="menu-item" bindtap="navigateToCategory" data-type="桌架专区">
-          <text>桌架专区</text>
-        </view>
+        <!-- 🆕 动态渲染分类列表，从数据库获取最新的分类名称和排序 -->
+        <block wx:for="{{categories}}" wx:key="_id">
+          <view class="menu-item" bindtap="navigateToCategory" data-type="{{item.name}}" data-id="{{item._id}}">
+            <text>{{item.name}}</text>
+          </view>
+        </block>
         <view class="menu-item" bindtap="navigateToFavorite">
           <text>收藏</text>
         </view>
@@ -84,6 +75,8 @@
         <scroll-view class="product-list" 
                      scroll-y="{{true}}" 
                      enable-back-to-top="{{true}}"
+                     bindscrolltolower="onScrollToLower"
+                     lower-threshold="100"
                      wx:if="{{!loading && products.length > 0}}">
           <view class="product-grid">
             <view class="product-item" 
@@ -95,6 +88,7 @@
                 <image class="product-img" 
                        src="{{item.imageUrls[0]}}" 
                        mode="aspectFill"
+                       lazy-load="{{true}}"
                        binderror="onImageError"
                        data-id="{{item._id}}"
                        data-index="{{index}}"></image>
@@ -106,6 +100,19 @@
                   <text class="{{item.isFavorite ? 'favorite-active' : ''}}">{{item.isFavorite ? '已收藏' : '收藏'}}</text>
                 </view>
               </view>
+            </view>
+          </view>
+          
+          <!-- 加载更多提示 - Requirements 2.3 -->
+          <view class="load-more-container">
+            <view class="loading-more" wx:if="{{loadingMore}}">
+              <text>加载中...</text>
+            </view>
+            <view class="no-more" wx:elif="{{!hasMoreProducts && products.length > 0}}">
+              <text>已加载全部产品</text>
+            </view>
+            <view class="load-more-hint" wx:elif="{{hasMoreProducts}}">
+              <text>上拉加载更多</text>
             </view>
           </view>
         </scroll-view>

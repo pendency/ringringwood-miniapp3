@@ -16,11 +16,14 @@ Page({
       brief: '',
       images: [],
       params: [],
+      features: [], // Requirements 3.5: 产品特点
       // 🆕 产品参数字段
       size: '',
       weight: '',
       color: '',
-      applicationScenario: ''
+      applicationScenario: '',
+      price: '',
+      originalPrice: '' // Requirements 3.6: 原价
     },
     similarProducts: [], // 初始化为空数组，将在加载产品数据后填充
     contactPhone: CONTACT_INFO.phone,
@@ -116,6 +119,7 @@ Page({
           params: result.params || [],
           features: result.features || [],
           price: result.price,
+          originalPrice: result.originalPrice, // Requirements 3.6: 原价
           categoryId: result.categoryId,
           // 🆕 使用已处理的视频数据
           videos: result.videos || [],

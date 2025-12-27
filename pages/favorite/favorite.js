@@ -1,4 +1,6 @@
 // favorite.js
+const productData = require('../../utils/productData.js');
+
 Page({
   data: {
     showMenu: false, // 控制侧边菜单显示
@@ -6,6 +8,7 @@ Page({
     navBarHeight: 44, // 默认导航栏高度
     contentPaddingTop: 64, // 默认内容区域顶部内边距
     favorites: [], // 收藏的产品列表
+    categories: [], // 🆕 分类列表（用于侧边栏）
     loading: false,
     showQRCode: false // 控制二维码弹窗显示
   },
@@ -28,6 +31,19 @@ Page({
   onShow: function() {
     // 每次显示页面时，重新加载收藏数据
     this.loadFavorites();
+    // 🆕 刷新分类数据（用于侧边栏）
+    this.loadCategories();
+  },
+
+  // 🆕 加载分类数据
+  async loadCategories() {
+    try {
+      const categories = await productData.refreshCategories();
+      console.log('[Favorite] 分类数据加载完成，共', categories.length, '个分类');
+      this.setData({ categories });
+    } catch (error) {
+      console.error('[Favorite] 加载分类数据失败:', error);
+    }
   },
   
   // 加载收藏数据

@@ -162,11 +162,15 @@
       <view class="section">
         <view class="section-title">产品参数</view>
         <view class="params-list">
-          <!-- 价格参数 - 第一行 -->
+          <!-- 价格参数 - 第一行 - Requirements 3.6 -->
           <view class="param-item" wx:if="{{product.price}}">
             <text class="param-name">价格</text>
-            <text class="param-value price-value {{product.price === '联系销售' ? 'clickable-price' : ''}}" 
-                  bindtap="{{product.price === '联系销售' ? 'showContactQRCode' : ''}}">{{product.price}}</text>
+            <view class="price-container">
+              <text class="param-value price-value {{product.price === '联系销售' ? 'clickable-price' : ''}}" 
+                    bindtap="{{product.price === '联系销售' ? 'showContactQRCode' : ''}}">{{product.price}}</text>
+              <!-- 显示原价和折扣 - Requirements 3.6 -->
+              <text class="original-price" wx:if="{{product.originalPrice && product.originalPrice !== product.price && product.originalPrice !== '联系销售'}}">¥{{product.originalPrice}}</text>
+            </view>
           </view>
           
           <!-- 尺寸参数 -->
@@ -193,10 +197,32 @@
             <text class="param-value">{{product.applicationScenario}}</text>
           </view>
           
+          <!-- 从params数组渲染参数 - Requirements 3.5 -->
+          <block wx:for="{{product.params}}" wx:key="name">
+            <view class="param-item" wx:if="{{item.name && item.value}}">
+              <text class="param-name">{{item.name}}</text>
+              <text class="param-value">{{item.value}}</text>
+            </view>
+          </block>
+          
           <!-- 无参数时的提示 -->
-          <view class="no-params-tip" wx:if="{{!product.price && !product.size && !product.weight && !product.color && !product.applicationScenario}}">
+          <view class="no-params-tip" wx:if="{{!product.price && !product.size && !product.weight && !product.color && !product.applicationScenario && (!product.params || product.params.length === 0)}}">
             <text>暂无产品参数信息</text>
           </view>
+        </view>
+      </view>
+      
+      <!-- 5. 产品特点 - Requirements 3.5 -->
+      <view class="section" wx:if="{{product.features && product.features.length > 0}}">
+        <view class="section-title">产品特点</view>
+        <view class="features-list">
+          <block wx:for="{{product.features}}" wx:key="index">
+            <!-- 只显示文本类型的特点，视频类型在视频区域展示 -->
+            <view class="feature-item" wx:if="{{item.type !== 'video'}}">
+              <view class="feature-title">{{item.title}}</view>
+              <view class="feature-description" wx:if="{{item.description}}">{{item.description}}</view>
+            </view>
+          </block>
         </view>
       </view>
       
@@ -207,7 +233,7 @@
         <scroll-view class="similar-products" scroll-x="true" enhanced="true" show-scrollbar="false">
           <view class="similar-item" wx:for="{{similarProducts}}" wx:key="id" bindtap="navigateToDetail" data-id="{{item.id}}">
             <view class="similar-image-container">
-              <image src="{{item.imageUrl}}" mode="aspectFill" class="similar-image"></image>
+              <image src="{{item.imageUrl}}" mode="aspectFill" class="similar-image" lazy-load="{{true}}"></image>
             </view>
             <view class="similar-name-container">
               <text class="similar-name">{{item.name}}</text>
@@ -224,7 +250,7 @@
       {{product.isFavorite ? '已收藏' : '收藏'}}
     </button>
     <button class="contact-btn btn-primary" bindtap="makePhoneCall">电话咨询</button>
-    <button class="contact-btn" open-type="contact">添加客服微信</button>
+    <button class="contact-btn" bindtap="showContactQRCode">添加客服微信</button>
   </view>
 
   <!-- 微信二维码弹窗 -->

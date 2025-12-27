@@ -1,0 +1,16 @@
+{
+  "name": "categoryAdmin",
+  "version": "1.0.0",
+  "description": "分类管理云函数 - 提供分类CRUD操作",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  },
+  "keywords": [
+    "category",
+    "admin",
+    "crud"
+  ],
+  "author": "",
+  "license": "ISC"
+}

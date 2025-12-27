@@ -18,6 +18,7 @@ Page({
     products: [], // 产品列表
     categories: [], // 分类列表
     loading: false, // 加载状态
+    showDebug: false, // 是否显示调试信息（默认关闭）
     uploadType: '', // 上传类型：product, banner, category
     tempImages: [], // 临时图片路径
     currentProduct: null, // 当前选中的产品
@@ -39,7 +40,22 @@ Page({
     importProgress: 0, // 导入进度
     backupHistory: [], // 备份历史
     migrationStatus: '', // 迁移状态信息
-    migrationSuccess: false // 迁移是否成功
+    migrationSuccess: false, // 迁移是否成功
+    
+    // 轮播图管理相关
+    banners: [], // 轮播图列表
+    bannersLoading: false, // 轮播图加载状态
+    showBannerForm: false, // 是否显示轮播图表单
+    editingBannerId: '', // 正在编辑的轮播图ID
+    bannerFormData: { // 轮播图表单数据
+      image: '',
+      title: '',
+      subtitle: '',
+      order: 999,
+      status: 1,
+      productId: ''
+    },
+    bannerSaving: false // 轮播图保存状态
   },
   
   onLoad: async function() {
@@ -84,6 +100,44 @@ Page({
         title: '加载失败',
         icon: 'error'
       });
+    }
+  },
+  
+  // 页面显示时触发 - 确保从其他页面返回时状态正确
+  onShow: function() {
+    console.log('管理后台页面显示');
+    // 确保 loading 状态被重置，防止按钮被禁用
+    if (this.data.loading) {
+      this.setData({ loading: false });
+    }
+    // 确保没有遗留的运行状态
+    if (this.data.importRunning) {
+      // 如果导入状态异常，重置它
+      console.log('检测到导入状态异常，重置中...');
+      this.setData({ importRunning: false });
+    }
+    if (this.data.migrationRunning) {
+      // 如果迁移状态异常，重置它
+      console.log('检测到迁移状态异常，重置中...');
+      this.setData({ migrationRunning: false });
+    }
+    
+    // 🆕 刷新分类数据，确保快速预览显示最新数据
+    this.refreshCategoriesData();
+  },
+  
+  // 🆕 刷新分类数据（用于快速预览同步）
+  async refreshCategoriesData() {
+    try {
+      console.log('[Admin] 刷新分类数据...');
+      const categoryModel = new CategoryModel();
+      const categories = await categoryModel.getAll({ limit: 50 });
+      console.log('[Admin] 分类数据刷新完成，数量:', categories.length);
+      
+      this.setData({ categories });
+    } catch (error) {
+      console.error('[Admin] 刷新分类数据失败:', error);
+      // 刷新失败不影响页面显示，只记录日志
     }
   },
   
@@ -227,6 +281,11 @@ Page({
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
     this.setData({ activeTab: tab });
+    
+    // 切换到轮播图管理时加载轮播图数据
+    if (tab === 'banners') {
+      this.loadBanners();
+    }
   },
   
   // 选择产品
@@ -290,29 +349,40 @@ Page({
       );
       
       if (fileIDs.length > 0) {
-        // 更新产品数据
-        const db = wx.cloud.database();
-        await db.collection('products').doc(this.data.currentProduct._id).update({
+        // 通过云函数更新产品数据（绕过客户端权限限制）
+        const result = await wx.cloud.callFunction({
+          name: 'productManager',
           data: {
-            images: fileIDs,
-            updateTime: db.serverDate()
+            action: 'updateProduct',
+            data: {
+              id: this.data.currentProduct._id,
+              images: fileIDs
+            }
           }
         });
         
         wx.hideLoading();
-        wx.showToast({
-          title: '上传成功',
-          icon: 'success'
-        });
         
-        // 重新加载数据
-        this.loadData();
-        
-        // 清空临时数据
-        this.setData({
-          tempImages: [],
-          currentProduct: null
-        });
+        if (result.result && result.result.success) {
+          wx.showToast({
+            title: '上传成功',
+            icon: 'success'
+          });
+          
+          // 重新加载数据
+          this.loadData();
+          
+          // 清空临时数据
+          this.setData({
+            tempImages: [],
+            currentProduct: null
+          });
+        } else {
+          wx.showToast({
+            title: result.result?.error || '更新失败',
+            icon: 'none'
+          });
+        }
       }
     } catch (error) {
       console.error('上传图片失败', error);
@@ -346,30 +416,43 @@ Page({
       );
       
       if (fileID) {
-        // 更新分类数据
-        const db = wx.cloud.database();
+        // 通过云函数更新分类数据（绕过客户端权限限制）
         const updateData = {};
         updateData[type] = fileID;
-        updateData.updateTime = db.serverDate();
         
-        await db.collection('categories').doc(this.data.currentCategory._id).update({
-          data: updateData
+        const result = await wx.cloud.callFunction({
+          name: 'productManager',
+          data: {
+            action: 'updateCategory',
+            data: {
+              id: this.data.currentCategory._id,
+              ...updateData
+            }
+          }
         });
         
         wx.hideLoading();
-        wx.showToast({
-          title: '上传成功',
-          icon: 'success'
-        });
         
-        // 重新加载数据
-        this.loadData();
-        
-        // 清空临时数据
-        this.setData({
-          tempImages: [],
-          currentCategory: null
-        });
+        if (result.result && result.result.success) {
+          wx.showToast({
+            title: '上传成功',
+            icon: 'success'
+          });
+          
+          // 重新加载数据
+          this.loadData();
+          
+          // 清空临时数据
+          this.setData({
+            tempImages: [],
+            currentCategory: null
+          });
+        } else {
+          wx.showToast({
+            title: result.result?.error || '更新失败',
+            icon: 'none'
+          });
+        }
       }
     } catch (error) {
       console.error('上传图片失败', error);
@@ -401,30 +484,39 @@ Page({
       );
       
       if (fileID) {
-        // 创建轮播图数据
-        const db = wx.cloud.database();
-        await db.collection('banners').add({
+        // 通过云函数创建轮播图数据（绕过客户端权限限制）
+        const result = await wx.cloud.callFunction({
+          name: 'productManager',
           data: {
-            image: fileID,
-            title: '轮播图',
-            link: '',
-            order: 1,
-            status: 1,
-            createTime: db.serverDate(),
-            updateTime: db.serverDate()
+            action: 'addBanner',
+            data: {
+              image: fileID,
+              title: '轮播图',
+              link: '',
+              order: 1,
+              status: 1
+            }
           }
         });
         
         wx.hideLoading();
-        wx.showToast({
-          title: '上传成功',
-          icon: 'success'
-        });
         
-        // 清空临时数据
-        this.setData({
-          tempImages: []
-        });
+        if (result.result && result.result.success) {
+          wx.showToast({
+            title: '上传成功',
+            icon: 'success'
+          });
+          
+          // 清空临时数据
+          this.setData({
+            tempImages: []
+          });
+        } else {
+          wx.showToast({
+            title: result.result?.error || '创建轮播图失败',
+            icon: 'none'
+          });
+        }
       }
     } catch (error) {
       console.error('上传图片失败', error);
@@ -1127,6 +1219,40 @@ module.exports = {
     });
   },
 
+  // 跳转到分类管理页面
+  goToCategoryAdmin: function() {
+    wx.navigateTo({
+      url: '/pages/admin-category/admin-category',
+      success: function() {
+        console.log('跳转到分类管理页面成功');
+      },
+      fail: function(error) {
+        console.error('跳转失败:', error);
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // 跳转到产品管理页面 - Requirements: 5.1
+  goToProductAdmin: function() {
+    wx.navigateTo({
+      url: '/pages/admin-product/admin-product',
+      success: function() {
+        console.log('跳转到产品管理页面成功');
+      },
+      fail: function(error) {
+        console.error('跳转失败:', error);
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
   // ==================== 新增的管理员功能方法 ====================
   
   // 验证管理员访问权限
@@ -1662,6 +1788,317 @@ module.exports = {
               title: '清除失败',
               icon: 'error'
             });
+          }
+        }
+      }
+    });
+  },
+
+  // ==================== 轮播图管理方法 ====================
+
+  /**
+   * 加载轮播图列表
+   */
+  async loadBanners() {
+    this.setData({ bannersLoading: true });
+    
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'productManager',
+        data: {
+          action: 'getBanners',
+          data: { includeDisabled: true }
+        }
+      });
+      
+      console.log('[Admin] 加载轮播图结果:', result);
+      
+      if (result.result && result.result.success) {
+        this.setData({
+          banners: result.result.data || [],
+          bannersLoading: false
+        });
+      } else {
+        this.setData({ bannersLoading: false });
+        wx.showToast({
+          title: result.result?.error || '加载轮播图失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      console.error('[Admin] 加载轮播图失败:', error);
+      this.setData({ bannersLoading: false });
+      wx.showToast({
+        title: '加载轮播图失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  /**
+   * 刷新轮播图列表
+   */
+  refreshBanners() {
+    this.loadBanners();
+  },
+
+  /**
+   * 显示新增轮播图表单
+   */
+  showAddBannerForm() {
+    this.setData({
+      showBannerForm: true,
+      editingBannerId: '',
+      bannerFormData: {
+        image: '',
+        title: '',
+        subtitle: '',
+        order: 999,
+        status: 1,
+        productId: ''
+      }
+    });
+  },
+
+  /**
+   * 编辑轮播图
+   */
+  editBanner(e) {
+    const id = e.currentTarget.dataset.id;
+    const banner = this.data.banners.find(b => b._id === id);
+    
+    if (banner) {
+      this.setData({
+        showBannerForm: true,
+        editingBannerId: id,
+        bannerFormData: {
+          image: banner.image || '',
+          title: banner.title || '',
+          subtitle: banner.subtitle || '',
+          order: banner.order !== undefined ? banner.order : 999,
+          status: banner.status !== undefined ? banner.status : 1,
+          productId: banner.productId || ''
+        }
+      });
+    }
+  },
+
+  /**
+   * 关闭轮播图表单
+   */
+  closeBannerForm() {
+    this.setData({
+      showBannerForm: false,
+      editingBannerId: '',
+      bannerFormData: {
+        image: '',
+        title: '',
+        subtitle: '',
+        order: 999,
+        status: 1,
+        productId: ''
+      }
+    });
+  },
+
+  /**
+   * 选择轮播图图片
+   */
+  chooseBannerImage() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath;
+        
+        wx.showLoading({ title: '上传中...', mask: true });
+        
+        try {
+          // 上传图片到云存储
+          const cloudPath = `ui/banners/banner_${Date.now()}.jpeg`;
+          const uploadResult = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath: tempFilePath
+          });
+          
+          wx.hideLoading();
+          
+          if (uploadResult.fileID) {
+            this.setData({
+              'bannerFormData.image': uploadResult.fileID
+            });
+            wx.showToast({ title: '上传成功', icon: 'success' });
+          } else {
+            wx.showToast({ title: '上传失败', icon: 'none' });
+          }
+        } catch (error) {
+          wx.hideLoading();
+          console.error('[Admin] 上传轮播图图片失败:', error);
+          wx.showToast({ title: '上传失败', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  /**
+   * 轮播图标题输入
+   */
+  onBannerTitleInput(e) {
+    this.setData({
+      'bannerFormData.title': e.detail.value
+    });
+  },
+
+  /**
+   * 轮播图副标题输入
+   */
+  onBannerSubtitleInput(e) {
+    this.setData({
+      'bannerFormData.subtitle': e.detail.value
+    });
+  },
+
+  /**
+   * 轮播图排序输入
+   */
+  onBannerOrderInput(e) {
+    this.setData({
+      'bannerFormData.order': parseInt(e.detail.value) || 999
+    });
+  },
+
+  /**
+   * 轮播图状态切换
+   */
+  onBannerStatusChange(e) {
+    this.setData({
+      'bannerFormData.status': e.detail.value ? 1 : 0
+    });
+  },
+
+  /**
+   * 轮播图关联产品ID输入
+   */
+  onBannerProductIdInput(e) {
+    this.setData({
+      'bannerFormData.productId': e.detail.value
+    });
+  },
+
+  /**
+   * 保存轮播图
+   */
+  async saveBanner() {
+    const { bannerFormData, editingBannerId } = this.data;
+    
+    // 验证必填字段
+    if (!bannerFormData.image) {
+      wx.showToast({ title: '请上传轮播图图片', icon: 'none' });
+      return;
+    }
+    
+    this.setData({ bannerSaving: true });
+    
+    try {
+      let result;
+      
+      if (editingBannerId) {
+        // 更新轮播图
+        result = await wx.cloud.callFunction({
+          name: 'productManager',
+          data: {
+            action: 'updateBanner',
+            data: {
+              id: editingBannerId,
+              image: bannerFormData.image,
+              title: bannerFormData.title,
+              subtitle: bannerFormData.subtitle,
+              order: bannerFormData.order,
+              status: bannerFormData.status,
+              productId: bannerFormData.productId
+            }
+          }
+        });
+      } else {
+        // 新增轮播图
+        result = await wx.cloud.callFunction({
+          name: 'productManager',
+          data: {
+            action: 'addBanner',
+            data: {
+              image: bannerFormData.image,
+              title: bannerFormData.title,
+              subtitle: bannerFormData.subtitle,
+              order: bannerFormData.order,
+              status: bannerFormData.status,
+              productId: bannerFormData.productId
+            }
+          }
+        });
+      }
+      
+      console.log('[Admin] 保存轮播图结果:', result);
+      
+      this.setData({ bannerSaving: false });
+      
+      if (result.result && result.result.success) {
+        wx.showToast({
+          title: editingBannerId ? '更新成功' : '新增成功',
+          icon: 'success'
+        });
+        this.closeBannerForm();
+        this.loadBanners();
+      } else {
+        wx.showToast({
+          title: result.result?.error || '保存失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      console.error('[Admin] 保存轮播图失败:', error);
+      this.setData({ bannerSaving: false });
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  /**
+   * 删除轮播图
+   */
+  deleteBanner(e) {
+    const id = e.currentTarget.dataset.id;
+    
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这个轮播图吗？',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中...', mask: true });
+          
+          try {
+            const result = await wx.cloud.callFunction({
+              name: 'productManager',
+              data: {
+                action: 'deleteBanner',
+                data: { id }
+              }
+            });
+            
+            wx.hideLoading();
+            
+            if (result.result && result.result.success) {
+              wx.showToast({ title: '删除成功', icon: 'success' });
+              this.loadBanners();
+            } else {
+              wx.showToast({
+                title: result.result?.error || '删除失败',
+                icon: 'none'
+              });
+            }
+          } catch (error) {
+            wx.hideLoading();
+            console.error('[Admin] 删除轮播图失败:', error);
+            wx.showToast({ title: '删除失败', icon: 'none' });
           }
         }
       }

@@ -745,8 +745,8 @@ for (let i = 2; i <= 6; i++) {
     price: 3500 + Math.floor(Math.random() * 2000),
     originalPrice: 4500 + Math.floor(Math.random() * 2000),
     categoryId: 'cat_resin',
-    imageUrls: [`/images/products/resin${i}.jpeg`],
-    images: [`/images/products/resin${i}-1.jpeg`],
+    imageUrls: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/resin/resin${i}.jpeg`],
+    images: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/resin/resin${i}-1.jpeg`],
     features: [],
     params: [
       { name: '材质', value: '环氧树脂' },
@@ -771,8 +771,8 @@ for (let i = 2; i <= 6; i++) {
     price: 2200 + Math.floor(Math.random() * 1800),
     originalPrice: 3200 + Math.floor(Math.random() * 1800),
     categoryId: 'cat_design',
-    imageUrls: [`/images/products/design${i}.jpeg`],
-    images: [`/images/products/design${i}-1.jpeg`],
+    imageUrls: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/design/design${i}.jpeg`],
+    images: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/design/design${i}-1.jpeg`],
     features: [],
     params: [
       { name: '材质', value: '创意复合材料' },
@@ -797,8 +797,8 @@ for (let i = 1; i <= 8; i++) {
     price: 800 + Math.floor(Math.random() * 1200),
     originalPrice: 1200 + Math.floor(Math.random() * 1200),
     categoryId: 'cat_frame',
-    imageUrls: [`/images/products/frame${i}.jpeg`],
-    images: [`/images/products/frame${i}-1.jpeg`],
+    imageUrls: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/frame/frame${i}.jpeg`],
+    images: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/frame/frame${i}-1.jpeg`],
     features: [],
     params: [
       { name: '材质', value: '金属/木质' },
@@ -857,8 +857,8 @@ for (let i = 1; i <= 59; i++) {
     price: '联系销售',
     originalPrice: '联系销售',
     categoryId: 'cat_custom',
-    imageUrls: [`/images/products/custom${i}.jpeg`],
-    images: [`/images/products/custom${i}-1.jpeg`],
+    imageUrls: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/custom/custom${i}.jpeg`],
+    images: [`cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/custom/custom${i}-1.jpeg`],
     features: features,
     params: [
       { name: '材质', value: '定制材质' },
@@ -883,31 +883,31 @@ const mockBanners = [
     id: 1,
     title: '✧ 原木经典',
     subtitle: '厚实整板，稳重大气',
-    imageUrl: '/images/banner1.jpeg'
+    imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner1.jpeg'
   },
   {
     id: 2,
     title: '✧ 树脂美学',
     subtitle: '光影流动，自带焦点感',
-    imageUrl: '/images/banner2.jpeg'
+    imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner2.jpeg'
   },
   {
     id: 3,
     title: '✦ 玩趣设计',
     subtitle: '风格桌面，空间主角',
-    imageUrl: '/images/banner3.jpeg'
+    imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner3.jpeg'
   },
   {
     id: 4,
     title: '✦ 高定专属',
     subtitle: '材质尺寸自由搭配',
-    imageUrl: '/images/banner4.jpeg'
+    imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner4.jpeg'
   },
   {
     id: 5,
     title: '✦ 桌架专区',
     subtitle: '多样款式，自由组合',
-    imageUrl: '/images/banner5.jpeg'
+    imageUrl: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner5.jpeg'
   }
 ];
 
