@@ -113,6 +113,7 @@ class CategoryAdminManager {
           action: 'addCategory',
           data: {
             name: category.name,
+            categoryCode: category.categoryCode || '', // 自定义分类ID
             description: category.description || '',
             icon: category.icon || '',
             image: category.image || '',

@@ -1,12 +1,12 @@
 <!-- admin-category.wxml -->
 <!-- 分类管理页面 -->
-<!-- Requirements: 1.1, 1.2, 1.3, 1.4 -->
+<page-meta root-font-size="system" page-style="overflow: hidden;" />
 <view class="container">
   <!-- 导航栏 -->
   <navigation-bar title="分类管理" showBack="{{true}}" bindback="navigateBack" />
   
   <!-- 内容区域 -->
-  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+  <scroll-view class="content-container" scroll-y="true" style="height: calc(100vh - {{contentPaddingTop}}px); margin-top: {{contentPaddingTop}}px;" bounces="{{false}}">
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="search-input-wrapper">
@@ -42,27 +42,19 @@
 
     <!-- 分类列表 -->
     <view class="category-list" wx:if="{{!loading && !loadError && filteredCategories.length > 0}}">
-      <view 
-        class="category-item" 
-        wx:for="{{filteredCategories}}" 
-        wx:key="_id"
-      >
+      <view class="category-item" wx:for="{{filteredCategories}}" wx:key="_id">
+        <!-- 分类信息 -->
         <view class="category-info" bindtap="goToEditCategory" data-id="{{item._id}}">
-          <view class="category-icon" wx:if="{{item.icon}}">
-            <image src="{{item.icon}}" mode="aspectFit" />
+          <view class="category-header">
+            <text class="category-name">{{item.name}}</text>
+            <text class="category-desc-text">{{item.description || ''}}</text>
           </view>
-          <view class="category-icon placeholder" wx:else>📁</view>
-          <view class="category-details">
-            <view class="category-name">{{item.name}}</view>
-            <view class="category-desc">{{item.description || '暂无描述'}}</view>
-            <view class="category-meta">
-              <text class="meta-item">排序: {{item.order}}</text>
-              <text class="meta-item status-{{item.status === 1 ? 'active' : 'inactive'}}">
-                {{item.status === 1 ? '启用' : '禁用'}}
-              </text>
-            </view>
+          <view class="category-meta">
+            <text class="meta-item">排序: {{item.order}}</text>
+            <text class="meta-item status-{{item.status === 1 ? 'active' : 'inactive'}}">{{item.status === 1 ? '启用' : '禁用'}}</text>
           </view>
         </view>
+        <!-- 操作按钮 -->
         <view class="category-actions">
           <button class="btn-action btn-edit" bindtap="goToEditCategory" data-id="{{item._id}}">编辑</button>
           <button class="btn-action btn-delete" bindtap="confirmDeleteCategory" data-id="{{item._id}}" data-name="{{item.name}}">删除</button>
@@ -74,5 +66,5 @@
     <view class="list-footer" wx:if="{{!loading && !loadError && filteredCategories.length > 0}}">
       <text>共 {{filteredCategories.length}} 个分类</text>
     </view>
-  </view>
+  </scroll-view>
 </view>

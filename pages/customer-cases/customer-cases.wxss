@@ -1,0 +1,123 @@
+/* customer-cases.wxss */
+/* 客户案例展示页面样式 */
+/* Requirements: 2.1, 2.2, 2.3, 2.4 */
+
+page {
+  height: 100%;
+  background-color: #F5F5DC;
+}
+
+.scroll-container {
+  height: 100vh;
+  box-sizing: border-box;
+  background-color: #F5F5DC;
+}
+
+.container {
+  background-color: #F5F5DC;
+  padding: 0 0 40rpx 0;
+}
+
+/* 页面标题 - Requirements: 2.1 */
+.page-header {
+  padding: 30rpx;
+  background-color: #fff;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 10rpx;
+}
+
+.page-subtitle {
+  font-size: 28rpx;
+  color: #8B5A2B;
+  margin-bottom: 20rpx;
+  opacity: 0.8;
+}
+
+/* 案例计数 - Requirements: 2.2 */
+.case-count {
+  font-size: 24rpx;
+  color: #D4B08C;
+  background-color: rgba(212, 176, 140, 0.15);
+  padding: 10rpx 18rpx;
+  border-radius: 16rpx;
+  display: inline-block;
+  font-weight: 500;
+}
+
+/* 案例列表 - Requirements: 2.3 */
+.case-list {
+  padding: 0 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+/* 案例项 - Requirements: 2.4 */
+.case-item {
+  background-color: #fff;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.case-img-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.case-img {
+  width: 100%;
+  display: block;
+}
+
+/* 案例信息 - Requirements: 2.4 */
+.case-info {
+  padding: 24rpx;
+  position: relative;
+  text-align: center;
+}
+
+.case-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #5D4037;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.case-description {
+  font-size: 24rpx;
+  color: #8B5A2B;
+  display: block;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* 加载状态 */
+.loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+  font-size: 28rpx;
+  color: #8B5A2B;
+}
+
+/* 空状态 - Requirements: 2.6 */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 30rpx;
+  color: #8B5A2B;
+  font-size: 28rpx;
+}

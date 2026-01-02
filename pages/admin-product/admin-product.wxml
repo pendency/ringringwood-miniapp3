@@ -1,6 +1,7 @@
 <!-- admin-product.wxml -->
 <!-- 产品管理页面 -->
 <!-- Requirements: 5.1, 5.2, 5.3, 5.4, 5.5 -->
+<page-meta root-font-size="system" page-style="overflow: hidden;" />
 <view class="container">
   <!-- 导航栏 -->
   <navigation-bar title="产品管理" showBack="{{true}}" bindback="navigateBack" />
@@ -8,11 +9,11 @@
   <!-- 内容区域 - 使用scroll-view实现滚动 -->
   <scroll-view 
     class="content-container" 
-    style="padding-top: {{contentPaddingTop}}px; height: calc(100vh - {{contentPaddingTop}}px);"
+    style="height: calc(100vh - {{contentPaddingTop}}px); margin-top: {{contentPaddingTop}}px;"
     scroll-y="{{true}}"
     enhanced="{{true}}"
     show-scrollbar="{{true}}"
-    bounces="{{true}}"
+    bounces="{{false}}"
     bindscrolltolower="onReachBottom"
     lower-threshold="100"
   >
@@ -154,8 +155,5 @@
     <view class="list-footer" wx:if="{{!loading && !loadError && products.length > 0}}">
       <text>共 {{total}} 个产品，当前显示 {{products.length}} 个</text>
     </view>
-    
-    <!-- 底部安全区域 -->
-    <view class="safe-area-bottom"></view>
   </scroll-view>
 </view>

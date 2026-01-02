@@ -1,14 +1,13 @@
-# 年轮环环小程序 - 本地数据版
+# 年轮环环小程序 - 云数据库版
 
 ## 项目介绍
 
-"年轮环环"是一款展示和销售木质家具产品的微信小程序，采用本地数据模式，包含丰富的产品展示和视频演示功能。
+"年轮环环"是一款展示和销售木质家具产品的微信小程序，采用微信云开发架构，包含丰富的产品展示和视频演示功能。
 
 ## 功能特点
 
 ### 产品展示
-- 5个产品类别：✧ 原木经典、✧ 树脂美学、✦ 玩趣设计、✦ 高定专属、✦ 桌架专区
-- 59个高定专属系列产品，每个产品都有配套的工艺展示视频
+- 6个产品类别：经典桌面款、玩趣设计款、树脂设计款、树脂定制款、桌架专区、椅子专区
 - 高清产品图片展示和详细参数说明
 - 产品特点介绍和视频演示
 
@@ -18,17 +17,17 @@
 - 产品详情页面，支持图片预览和视频播放
 - 响应式设计，适配不同设备
 
-### 视频功能
-- 高定专属系列支持工艺视频展示
-- 视频控制播放，提升用户体验
-- 视频文件大小优化，确保流畅播放
+### 管理后台
+- 产品添加、编辑、删除
+- 图片和视频上传到云存储
+- 分类管理
 
 ## 技术架构
 
 ### 数据管理
-- 使用本地模拟数据系统（`utils/mock-data.js`）
-- 不依赖任何外部数据库或云服务
-- 数据结构完整，支持分页、筛选等功能
+- 使用微信云开发数据库作为唯一数据源
+- 云函数处理数据操作
+- 云存储管理图片和视频资源
 
 ### 文件结构
 ```
@@ -36,65 +35,84 @@
 ├── pages/              # 页面文件
 │   ├── index/          # 首页
 │   ├── category/       # 分类页面
-│   ├── detail/         # 产品详情页
+│   ├── product-detail/ # 产品详情页
+│   ├── product-form/   # 产品表单（管理后台）
 │   ├── brand/          # 品牌介绍页
-│   ├── contact/        # 联系页面
-│   └── admin/          # 管理页面
-├── images/             # 图片资源
-│   ├── *.jpeg         # 产品主图、轮播图、分类图等
-│   └── products/      # 产品详情图片和视频
+│   └── contact/        # 联系页面
+├── cloudfunctions/     # 云函数
+│   └── productManager/ # 产品管理云函数
 ├── utils/              # 工具文件
-│   └── mock-data.js   # 模拟数据系统
+│   ├── productData.js  # 产品数据管理
+│   ├── cloudProductData.js # 云数据库操作
+│   └── cacheManager.js # 缓存管理
 ├── components/         # 自定义组件
+├── config/             # 配置文件
 └── app.js             # 应用入口文件
 ```
 
-## 产品数据结构
+## 数据库集合
 
-### 产品信息
+### products（产品）
 ```javascript
 {
-  _id: "产品ID",
+  _id: "产品ID",        // 格式: {prefix}{number}，如 classic1, resin2
   name: "产品名称",
   description: "产品描述",
-  price: 价格,
-  originalPrice: 原价,
+  price: "价格",
   categoryId: "分类ID",
   imageUrls: ["主图路径"],
   images: ["详情图片路径数组"],
-  features: [
-    {
-      title: "特点标题",
-      video: "视频文件路径", // 高定专属系列特有
-      description: "特点描述"
-    }
-  ],
-  params: [
-    { name: "参数名", value: "参数值" }
-  ],
-  isHot: boolean,        // 是否热门
-  isNew: boolean,        // 是否新品
-  isRecommended: boolean // 是否推荐
+  video: "视频路径",
+  features: [...],
+  params: [...],
+  isHot: boolean,
+  isNew: boolean,
+  status: 1
 }
 ```
 
-### 分类信息
+### categories（分类）
 ```javascript
 {
-  _id: "分类ID",
+  _id: "分类ID",        // 格式: cat_{name}，如 cat_classic
   name: "分类名称",
   description: "分类描述",
   order: 排序权重,
-  status: 状态
+  status: 1
 }
 ```
 
-## 高定专属系列
+### banners（轮播图）
+```javascript
+{
+  _id: "banner1",
+  image: "图片路径",
+  title: "标题",
+  productId: "关联产品ID"
+}
+```
 
-项目包含59个高定专属产品（custom1-custom59），每个产品都有：
-- 高清产品主图：`/images/custom[1-59].jpeg`
-- 工艺展示视频：`/images/products/custom[1-59]-f1.mp4`
-- 详细的产品参数和特点说明
+## 分类体系
+
+| 分类ID | 分类名称 | 前缀 |
+|--------|----------|------|
+| cat_classic | 经典桌面款 | classic |
+| cat_fun | 玩趣设计款 | fun |
+| cat_resin | 树脂设计款 | resin |
+| cat_custom | 树脂定制款 | custom |
+| cat_frame | 桌架专区 | frame |
+| cat_chair | 椅子专区 | chair |
+
+## 云存储命名规范
+
+详见 `.kiro/specs/id-naming-convention.md`
+
+### 产品图片
+- 主图: `products/images/{prefix}/{productId}_cover.jpeg`
+- 详情图: `products/images/{prefix}/{productId}_detail_{n}.jpeg`
+
+### 产品视频
+- 视频: `products/videos/{prefix}/{productId}_video.mp4`
 
 ## 安装和运行
 
@@ -104,47 +122,31 @@
    cd 年轮环环小程序
    ```
 
-2. **使用微信开发者工具打开**
-   - 打开微信开发者工具
-   - 选择"导入项目"
-   - 选择项目目录
-   - 输入AppID（或选择测试号）
+2. **配置云开发**
+   - 在微信开发者工具中开通云开发
+   - 创建云开发环境
+   - 更新 `app.js` 中的云环境ID
 
-3. **编译运行**
+3. **部署云函数**
+   - 右键 `cloudfunctions/productManager`
+   - 选择"上传并部署：云端安装依赖"
+
+4. **编译运行**
    - 点击"编译"按钮
    - 在模拟器中预览效果
 
-## 部署说明
+## 管理产品
 
-### 图片资源
-所有图片和视频文件都已准备就绪：
-- 主图文件：`/images/` 目录
-- 详情图片和视频：`/images/products/` 目录
-
-### 配置修改
-如需修改产品数据，编辑 `utils/mock-data.js` 文件：
-- `mockCategories` - 分类数据
-- `mockProducts` - 产品数据
-- `mockBanners` - 轮播图数据
-
-## 性能优化
-
-- 图片文件大小已优化，确保快速加载
-- 视频文件控制在2-8MB，保证流畅播放
-- 使用懒加载和分页技术，提升用户体验
-
-## 技术支持
-
-如有问题，请检查：
-1. 微信开发者工具版本是否为最新
-2. 项目基础库版本设置
-3. 图片和视频文件路径是否正确
+通过小程序管理后台页面：
+1. 添加产品：填写产品信息，上传图片和视频
+2. 编辑产品：修改现有产品信息
+3. 删除产品：移除不需要的产品
 
 ## 版本历史
 
-- v1.0.0 - 基本功能实现，支持产品展示和分类浏览
-- v1.1.0 - 添加高定专属系列视频展示功能
-- v1.2.0 - 移除云开发依赖，完全基于本地数据运行
+- v1.0.0 - 基本功能实现
+- v1.1.0 - 添加视频展示功能
+- v2.0.0 - 迁移到云开发架构，数据库作为唯一数据源
 
 ## 许可证
 

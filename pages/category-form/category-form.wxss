@@ -12,7 +12,8 @@
   width: 100%;
   box-sizing: border-box;
   padding: 20rpx;
-  min-height: calc(100vh - 40rpx);
+  height: calc(100vh - 44px);
+  padding-bottom: 40rpx;
 }
 
 /* 加载中样式 */
@@ -66,6 +67,12 @@
 .form-input.input-error {
   border-color: #F44336;
   background-color: #ffebee;
+}
+
+/* 禁用状态的输入框 */
+.form-input[disabled] {
+  background-color: #e8e8e8;
+  color: #999;
 }
 
 /* 文本域样式 */

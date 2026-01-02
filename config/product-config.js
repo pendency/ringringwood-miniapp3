@@ -16,9 +16,6 @@ const ProductConfig = {
     // 生成的JSON文件路径
     generatedJsonFile: './utils/generated-products.json',
     
-    // mock数据文件路径
-    mockDataFile: './utils/mock-data.js',
-    
     // 产品图片基础目录
     imageBaseDir: 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/',
     

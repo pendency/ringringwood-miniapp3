@@ -2,7 +2,7 @@
 // 产品数据管理模块，供首页和分类页共用
 // Requirements: 9.3, 9.4 - 数据缓存和缓存过期刷新
 
-const mockData = require('./mock-data.js');
+// 注意：已移除 mock-data.js 依赖，数据库是唯一数据源
 import cloudProductData from './cloudProductData.js';
 const { DEFAULT_IMAGES, PAGINATION_CONFIG } = require('../config/app-config.js');
 const cacheManager = require('./cacheManager.js');

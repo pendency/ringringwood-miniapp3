@@ -31,12 +31,22 @@ const categoryIdPrefixMapping = {
 
 // 🆕 旧分类ID到新分类ID的映射（用于数据迁移）
 const oldToNewCategoryMapping = {
+  // 新格式（带 cat_ 前缀）
   'cat_wood': 'cat_classic',      // 经典桌面款
   'cat_design': 'cat_fun',        // 玩趣设计款
   'cat_resin': 'cat_resin',       // 树脂设计款
   'cat_custom': 'cat_custom',     // 树脂定制款
   'cat_frame': 'cat_frame',       // 桌架专区
   'cat_chair': 'cat_chair',       // 椅子专区
+  // 旧格式（不带 cat_ 前缀）
+  'wood': 'cat_classic',          // 经典桌面款
+  'design': 'cat_fun',            // 玩趣设计款
+  'resin': 'cat_resin',           // 树脂设计款
+  'custom': 'cat_custom',         // 树脂定制款
+  'frame': 'cat_frame',           // 桌架专区
+  'chair': 'cat_chair',           // 椅子专区
+  'other': 'cat_chair',           // 椅子专区（旧名称 other）
+  // 哈希ID
   '8f6c3a63694e9d8a096b05cc732a6a58': 'cat_chair'  // 椅子专区（旧哈希ID）
 };
 
@@ -87,6 +97,7 @@ async function generateProductId(categoryId) {
 }
 
 // 🆕 生成规范化的轮播图ID
+// Requirements: 2.2 - Banner ID format: banner_{number}
 async function generateBannerId() {
   try {
     const result = await db.collection('banners')
@@ -99,7 +110,8 @@ async function generateBannerId() {
     if (result.data && result.data.length > 0) {
       result.data.forEach(item => {
         const id = item._id;
-        const match = id.match(/banner(\d+)$/);
+        // 匹配 banner_{number} 或 banner{number} 格式
+        const match = id.match(/banner_?(\d+)$/);
         if (match) {
           const num = parseInt(match[1], 10);
           if (num > maxNumber) {
@@ -109,11 +121,144 @@ async function generateBannerId() {
       });
     }
     
-    return `banner${maxNumber + 1}`;
+    // 返回规范化格式: banner_{number}
+    return `banner_${maxNumber + 1}`;
   } catch (error) {
     console.error('生成轮播图ID失败:', error);
-    return `banner${Date.now()}`;
+    return `banner_${Date.now()}`;
   }
+}
+
+// 🆕 生成规范化的案例ID
+// Requirements: 3.2 - Case ID format: custom{number}
+async function generateCaseId() {
+  try {
+    const result = await db.collection('cases')
+      .field({ _id: true })
+      .limit(100)
+      .get();
+    
+    let maxNumber = 0;
+    
+    if (result.data && result.data.length > 0) {
+      result.data.forEach(item => {
+        const id = item._id;
+        // 匹配 custom{number} 格式
+        const match = id.match(/^custom(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      });
+    }
+    
+    // 返回规范化格式: custom{number}
+    return `custom${maxNumber + 1}`;
+  } catch (error) {
+    console.error('生成案例ID失败:', error);
+    return `custom${Date.now()}`;
+  }
+}
+
+// 🆕 验证轮播图数据
+// Requirements: 2.1 - Banner data validation
+function validateBannerData(data) {
+  const errors = [];
+
+  // 验证必填字段：image
+  if (!data || !data.image || typeof data.image !== 'string' || data.image.trim() === '') {
+    errors.push('图片地址(image)不能为空');
+  }
+
+  // 验证 order 字段（如果提供）
+  if (data && data.order !== undefined && data.order !== null) {
+    if (typeof data.order !== 'number' || !Number.isInteger(data.order) || data.order < 0) {
+      errors.push('排序权重(order)必须是非负整数');
+    }
+  }
+
+  // 验证 status 字段（如果提供）
+  if (data && data.status !== undefined && data.status !== null) {
+    if (data.status !== 0 && data.status !== 1) {
+      errors.push('状态(status)必须是0或1');
+    }
+  }
+
+  // 验证 productId 字段（如果提供且非空）
+  if (data && data.productId !== undefined && data.productId !== null && data.productId !== '') {
+    if (!validateProductIdFormat(data.productId)) {
+      errors.push('产品ID(productId)格式不正确');
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+// 🆕 验证产品ID格式
+// Requirements: 7.3 - Product ID validation
+function validateProductIdFormat(productId) {
+  // 空字符串或 undefined/null 视为有效（productId 是可选的）
+  if (productId === undefined || productId === null || productId === '') {
+    return true;
+  }
+
+  // 必须是字符串
+  if (typeof productId !== 'string') {
+    return false;
+  }
+
+  // 产品ID格式：字母数字、下划线、连字符组成，长度1-100
+  const productIdPattern = /^[a-zA-Z0-9_-]+$/;
+  return productIdPattern.test(productId) && productId.length >= 1 && productId.length <= 100;
+}
+
+// 🆕 验证案例数据
+// Requirements: 3.1 - Case data validation
+function validateCaseData(data) {
+  const errors = [];
+
+  // 验证必填字段：title
+  if (!data || !data.title || typeof data.title !== 'string' || data.title.trim() === '') {
+    errors.push('案例标题(title)不能为空');
+  }
+
+  // 验证 description 字段（如果提供）
+  if (data && data.description !== undefined && data.description !== null) {
+    if (typeof data.description !== 'string') {
+      errors.push('案例描述(description)必须是字符串');
+    }
+  }
+
+  // 验证 imageUrl 字段（如果提供且非空）
+  if (data && data.imageUrl !== undefined && data.imageUrl !== null && data.imageUrl !== '') {
+    if (typeof data.imageUrl !== 'string') {
+      errors.push('图片地址(imageUrl)必须是字符串');
+    }
+  }
+
+  // 验证 order 字段（如果提供）
+  if (data && data.order !== undefined && data.order !== null) {
+    if (typeof data.order !== 'number' || !Number.isInteger(data.order) || data.order < 0) {
+      errors.push('排序权重(order)必须是非负整数');
+    }
+  }
+
+  // 验证 status 字段（如果提供）
+  if (data && data.status !== undefined && data.status !== null) {
+    if (data.status !== 0 && data.status !== 1) {
+      errors.push('状态(status)必须是0或1');
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
 }
 
 // 转换本地路径为云存储路径
@@ -173,7 +318,7 @@ exports.main = async (event, context) => {
   try {
     if (action === 'getProducts') {
       let {
-        limit = 10,
+        limit = 100,
         page = 1,
         pageSize,
         categoryId, 
@@ -306,6 +451,8 @@ exports.main = async (event, context) => {
           imageUrls: (item.imageUrls && item.imageUrls.length > 0) 
             ? item.imageUrls.filter(Boolean) 
             : [item.imageUrl1 || item.image || item.mainImage || item.imageUrl || ''].filter(Boolean),
+          // 🆕 产品视频URL
+          videoUrl: item.videoUrl || item.video || '',
           categoryId: categoryId,
           categoryName: categoryName,
           // 标签字段 - Requirements 7.4
@@ -323,6 +470,10 @@ exports.main = async (event, context) => {
           weight: item.weight || '',
           color: item.color || '',
           applicationScenario: item.applicationScenario || '',
+          // 🆕 产品规格参数数组 - 用于筛选功能 (Feature: category-filter-search)
+          params: item.params || [],
+          // 🆕 创建时间 - 用于排序功能 (Feature: category-filter-search)
+          createTime: item.createTime || null,
           // 添加原始数据用于调试
           _originalData: debugMode ? item : undefined
         };
@@ -514,31 +665,44 @@ exports.main = async (event, context) => {
         categoryName = categoryMapping[item.categoryId] || item.categoryId;
       }
 
-      // 🔧 修复：构建图片数组 - 合并 imageUrls 和 images 数组
-      let images = [];
-      
+      // 🔧 修复：构建图片数组 - 区分主图和详情图
       // 1. 首先从 imageUrls 数组获取主图（新增产品保存的格式）
+      let mainImages = []; // 主图数组
+      let detailImages = []; // 详情图数组
+      
       if (item.imageUrls && Array.isArray(item.imageUrls) && item.imageUrls.length > 0) {
-        images = item.imageUrls.filter(url => url && url.trim());
+        mainImages = item.imageUrls.filter(url => url && url.trim());
       } else {
-        // 回退到 imageUrl1-10 字段（旧数据格式）- 包含 imageUrl1
-        for (let i = 1; i <= 10; i++) {
+        // 回退到 imageUrl1 字段（旧数据格式）- 只取第一张作为主图
+        if (item.imageUrl1 && item.imageUrl1.trim()) {
+          mainImages.push(item.imageUrl1);
+        }
+      }
+      
+      // 2. 获取详情图
+      // 优先从 images 数组获取
+      if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+        detailImages = item.images.filter(url => url && url.trim());
+      }
+      
+      // 如果 images 数组为空，回退到 imageUrl2-10 字段（旧数据格式）
+      if (detailImages.length === 0) {
+        for (let i = 2; i <= 10; i++) {
           const imageField = `imageUrl${i}`;
           if (item[imageField] && item[imageField].trim()) {
-            images.push(item[imageField]);
+            detailImages.push(item[imageField]);
           }
         }
       }
       
-      // 2. 🆕 合并 images 数组（详情图），避免重复
-      if (item.images && Array.isArray(item.images) && item.images.length > 0) {
-        const existingUrls = new Set(images);
-        item.images.forEach(url => {
-          if (url && url.trim() && !existingUrls.has(url.trim())) {
-            images.push(url.trim());
-          }
-        });
-      }
+      // 3. 合并主图和详情图用于轮播展示（避免重复）
+      const allImages = [...mainImages];
+      const existingUrls = new Set(mainImages);
+      detailImages.forEach(url => {
+        if (url && url.trim() && !existingUrls.has(url.trim())) {
+          allImages.push(url.trim());
+        }
+      });
 
       // 处理视频字段 - 支持多种字段名
       const rawVideoUrl = item.video || item.videoUrl || item.vediourl || '';
@@ -563,7 +727,8 @@ exports.main = async (event, context) => {
         description: item.description || item.desc || '',
         categoryId: categoryId,
         categoryName: categoryName,
-        images: images, // 排除了imageUrl1的图片数组
+        images: allImages, // 所有图片（主图+详情图，用于轮播）
+        detailImages: detailImages, // 只有详情图（用于详情图展示栏）
         video: convertedVideoUrl || '',
         videoUrl: convertedVideoUrl || '',
         // 🆕 产品特点和参数字段
@@ -626,13 +791,34 @@ exports.main = async (event, context) => {
 
       const collection = db.collection('products');
 
-      // 🆕 生成规范化的产品ID
-      const productId = await generateProductId(product.categoryId);
-      if (debugMode) console.log('🔹 生成的产品ID:', productId);
+      // 🆕 支持自定义产品ID（用于CSV导入）
+      let productId;
+      if (product.customProductId && product.customProductId.trim()) {
+        // 使用CSV中指定的产品ID
+        productId = product.customProductId.trim();
+        if (debugMode) console.log('🔹 使用自定义产品ID:', productId);
+        
+        // 检查ID是否已存在
+        try {
+          const existingProduct = await collection.doc(productId).get();
+          if (existingProduct.data) {
+            return {
+              success: false,
+              error: `产品ID "${productId}" 已存在`
+            };
+          }
+        } catch (err) {
+          // 产品不存在，可以继续创建
+        }
+      } else {
+        // 自动生成规范化的产品ID
+        productId = await generateProductId(product.categoryId);
+        if (debugMode) console.log('🔹 生成的产品ID:', productId);
+      }
 
       // 构建产品数据
       const productData = {
-        _id: productId, // 🆕 使用规范化ID
+        _id: productId, // 使用指定或生成的ID
         name: product.name ? product.name.trim() : '',
         title: product.name ? product.name.trim() : '', // 兼容旧字段
         description: product.description || '',
@@ -642,8 +828,12 @@ exports.main = async (event, context) => {
         imageUrl1: product.imageUrls && product.imageUrls[0] ? product.imageUrls[0] : '',
         imageUrls: product.imageUrls || [],
         images: product.images || [],
+        video: product.video || product.videoUrl || '', // 视频URL
+        videoUrl: product.videoUrl || product.video || '', // 兼容字段
         features: product.features || [],
         params: product.params || [],
+        // 🆕 尺寸字段 - 用于筛选功能 (Feature: category-filter-search)
+        size: product.size || '',
         isHot: product.isHot === true ? 'TRUE' : 'FALSE',
         isNew: product.isNew === true ? 'TRUE' : 'FALSE',
         isRecommended: product.isRecommended === true ? 'TRUE' : 'FALSE',
@@ -747,6 +937,10 @@ exports.main = async (event, context) => {
       if (productData.images !== undefined) {
         updateData.images = productData.images;
       }
+      if (productData.video !== undefined || productData.videoUrl !== undefined) {
+        updateData.video = productData.video || productData.videoUrl || '';
+        updateData.videoUrl = productData.videoUrl || productData.video || '';
+      }
       if (productData.features !== undefined) {
         updateData.features = productData.features;
       }
@@ -767,6 +961,10 @@ exports.main = async (event, context) => {
       }
       if (productData.order !== undefined) {
         updateData.order = productData.order;
+      }
+      // 🆕 尺寸字段 - 用于筛选功能 (Feature: category-filter-search)
+      if (productData.size !== undefined) {
+        updateData.size = productData.size;
       }
 
       await collection.doc(id).update({
@@ -1184,6 +1382,22 @@ exports.main = async (event, context) => {
         };
       }
 
+      // 如果提供了自定义分类ID，检查是否重复
+      const customCategoryCode = categoryData.categoryCode ? categoryData.categoryCode.trim() : '';
+      if (customCategoryCode) {
+        try {
+          const idCheck = await collection.doc(customCategoryCode).get();
+          if (idCheck.data) {
+            return {
+              success: false,
+              error: '分类ID已存在，请使用其他ID'
+            };
+          }
+        } catch (err) {
+          // 文档不存在，可以继续创建
+        }
+      }
+
       // 构建分类数据
       const newCategory = {
         name: categoryData.name.trim(),
@@ -1198,15 +1412,28 @@ exports.main = async (event, context) => {
 
       if (debugMode) console.log('🔹 addCategory 新分类数据:', newCategory);
 
-      const result = await collection.add({
-        data: newCategory
-      });
+      let result;
+      
+      // 如果提供了自定义分类ID，使用指定ID创建文档
+      if (customCategoryCode) {
+        // 使用自定义ID创建文档
+        newCategory._id = customCategoryCode;
+        result = await collection.add({
+          data: newCategory
+        });
+        if (debugMode) console.log('🔹 addCategory 使用自定义ID:', customCategoryCode);
+      } else {
+        // 自动生成ID
+        result = await collection.add({
+          data: newCategory
+        });
+      }
 
       if (debugMode) console.log('🔹 addCategory 结果:', result);
 
       return {
         success: true,
-        id: result._id
+        id: customCategoryCode || result._id
       };
     }
 
@@ -1267,6 +1494,7 @@ exports.main = async (event, context) => {
     // ==================== 轮播图管理 Actions ====================
 
     // 获取轮播图列表
+    // Requirements: 5.2, 6.2, 6.4
     if (action === 'getBanners') {
       if (debugMode) console.log('🔹 getBanners 参数:', data);
 
@@ -1274,14 +1502,24 @@ exports.main = async (event, context) => {
       
       // 构建查询条件
       const where = {};
-      if (data.status !== undefined) {
+      
+      // 支持 includeDisabled 参数 - Requirements: 5.2
+      // 如果 includeDisabled 为 false 或未设置，只返回启用的轮播图
+      if (data.includeDisabled !== true) {
+        where.status = 1;
+      } else if (data.status !== undefined) {
+        // 如果明确指定了 status，使用指定的值
         where.status = data.status;
       }
 
+      // 获取数据并排序
+      // Requirements: 6.2 - 按 order 升序排序
+      // Requirements: 6.4 - 相同 order 时按 createTime 排序
       const queryResult = await collection
         .where(where)
-        .orderBy('order', 'asc')
-        .limit(data.limit || 10)
+        .orderBy('order', 'asc')      // 首先按 order 升序
+        .orderBy('createTime', 'asc') // 相同 order 时按 createTime 升序
+        .limit(data.limit || 100)
         .get();
 
       if (debugMode) console.log('🔹 getBanners 结果:', queryResult.data.length);
@@ -1294,35 +1532,39 @@ exports.main = async (event, context) => {
     }
 
     // 新增轮播图
+    // Requirements: 2.1, 2.2, 6.3
     if (action === 'addBanner') {
       const bannerData = data;
       
       if (debugMode) console.log('🔹 addBanner 参数:', bannerData);
 
-      // 验证必填字段
-      if (!bannerData.image) {
+      // 🆕 使用验证函数验证数据
+      const validationResult = validateBannerData(bannerData);
+      if (!validationResult.valid) {
         return {
           success: false,
-          error: '轮播图图片不能为空'
+          error: validationResult.errors.join('; ')
         };
       }
 
       const collection = db.collection('banners');
 
-      // 🆕 生成规范化的轮播图ID
+      // 🆕 生成规范化的轮播图ID (格式: banner_{number})
       const bannerId = await generateBannerId();
       if (debugMode) console.log('🔹 生成的轮播图ID:', bannerId);
 
-      // 构建轮播图数据
+      // 构建轮播图数据 - 包含所有必需字段
+      // Requirements: 2.1 - 必需字段: _id, image, title, subtitle, order, status, productId, categoryId, linkType, createTime, updateTime
       const newBanner = {
-        _id: bannerId, // 🆕 使用规范化ID
+        _id: bannerId, // 🆕 使用规范化ID (banner_{number})
         image: bannerData.image,
-        title: bannerData.title || '轮播图',
-        subtitle: bannerData.subtitle || '',
-        link: bannerData.link || '',
-        productId: bannerData.productId || '',
-        order: bannerData.order !== undefined ? bannerData.order : 999,
-        status: bannerData.status !== undefined ? bannerData.status : 1,
+        title: bannerData.title !== undefined ? bannerData.title : '轮播图',
+        subtitle: bannerData.subtitle !== undefined ? bannerData.subtitle : '',
+        order: bannerData.order !== undefined ? bannerData.order : 999, // Requirements: 6.3 - 默认值999
+        status: bannerData.status !== undefined ? bannerData.status : 1, // 默认启用
+        linkType: bannerData.linkType !== undefined ? bannerData.linkType : 'none', // 跳转类型：none/product/category
+        productId: bannerData.productId !== undefined ? bannerData.productId : '',
+        categoryId: bannerData.categoryId !== undefined ? bannerData.categoryId : '', // 关联分类ID
         createTime: db.serverDate(),
         updateTime: db.serverDate()
       };
@@ -1342,6 +1584,9 @@ exports.main = async (event, context) => {
     }
 
     // 更新轮播图
+    // Requirements: 3.3 - 只更新提供的字段
+    // Requirements: 3.4 - 自动更新 updateTime
+    // Requirements: 3.5 - 图片替换时删除旧图片
     if (action === 'updateBanner') {
       const { id, ...bannerData } = data;
       
@@ -1356,7 +1601,8 @@ exports.main = async (event, context) => {
 
       const collection = db.collection('banners');
 
-      // 检查轮播图是否存在
+      // 检查轮播图是否存在并获取现有数据
+      let existingBannerData;
       try {
         const existingBanner = await collection.doc(id).get();
         if (!existingBanner.data) {
@@ -1365,6 +1611,7 @@ exports.main = async (event, context) => {
             error: '轮播图不存在'
           };
         }
+        existingBannerData = existingBanner.data;
       } catch (err) {
         return {
           success: false,
@@ -1372,13 +1619,35 @@ exports.main = async (event, context) => {
         };
       }
 
-      // 构建更新数据
+      // 构建更新数据 - Requirements: 3.4 自动更新 updateTime
       const updateData = {
         updateTime: db.serverDate()
       };
 
+      // Requirements: 3.3 - 只更新提供的字段
+      // 处理图片字段 - Requirements: 3.5 图片替换时删除旧图片
+      let deletedOldImage = false;
       if (bannerData.image !== undefined) {
         updateData.image = bannerData.image;
+        
+        // 如果新图片与旧图片不同，尝试删除旧图片
+        const oldImage = existingBannerData.image;
+        const newImage = bannerData.image;
+        
+        if (oldImage && oldImage !== newImage && oldImage.startsWith('cloud://')) {
+          try {
+            const deleteResult = await cloud.deleteFile({
+              fileList: [oldImage]
+            });
+            if (deleteResult.fileList && deleteResult.fileList[0].status === 0) {
+              deletedOldImage = true;
+              if (debugMode) console.log('🔹 updateBanner 删除旧图片成功:', oldImage);
+            }
+          } catch (deleteErr) {
+            // 图片删除失败不影响更新操作
+            console.error('🔹 updateBanner 删除旧图片失败:', deleteErr);
+          }
+        }
       }
       if (bannerData.title !== undefined) {
         updateData.title = bannerData.title;
@@ -1389,8 +1658,14 @@ exports.main = async (event, context) => {
       if (bannerData.link !== undefined) {
         updateData.link = bannerData.link;
       }
+      if (bannerData.linkType !== undefined) {
+        updateData.linkType = bannerData.linkType;
+      }
       if (bannerData.productId !== undefined) {
         updateData.productId = bannerData.productId;
+      }
+      if (bannerData.categoryId !== undefined) {
+        updateData.categoryId = bannerData.categoryId;
       }
       if (bannerData.order !== undefined) {
         updateData.order = bannerData.order;
@@ -1409,11 +1684,15 @@ exports.main = async (event, context) => {
 
       return {
         success: true,
-        updated: updateResult.stats ? updateResult.stats.updated : 1
+        updated: updateResult.stats ? updateResult.stats.updated : 1,
+        deletedOldImage: deletedOldImage
       };
     }
 
     // 删除轮播图
+    // Requirements: 4.2 - 删除数据库记录
+    // Requirements: 4.3 - 删除云存储图片
+    // Requirements: 4.4 - 图片删除失败不影响记录删除
     if (action === 'deleteBanner') {
       const bannerId = data.id || event.id;
       
@@ -1446,8 +1725,9 @@ exports.main = async (event, context) => {
         };
       }
 
-      // 删除云存储中的图片
+      // Requirements: 4.3 - 尝试删除云存储中的图片
       let deletedFile = false;
+      let imageDeleteError = null;
       if (bannerData.image && bannerData.image.startsWith('cloud://')) {
         try {
           const deleteResult = await cloud.deleteFile({
@@ -1457,11 +1737,13 @@ exports.main = async (event, context) => {
             deletedFile = true;
           }
         } catch (deleteErr) {
+          // Requirements: 4.4 - 图片删除失败不影响记录删除，只记录错误
           console.error('🔹 删除轮播图图片失败:', deleteErr);
+          imageDeleteError = deleteErr.message || '图片删除失败';
         }
       }
 
-      // 删除数据库记录
+      // Requirements: 4.2 - 删除数据库记录（无论图片删除是否成功）
       await collection.doc(bannerId).remove();
 
       if (debugMode) console.log('🔹 deleteBanner 完成, 删除图片:', deletedFile);
@@ -1491,22 +1773,34 @@ exports.main = async (event, context) => {
         errors: []
       };
 
-      // 按前缀统计当前最大序号
-      const prefixMaxNumbers = {};
+      // 按前缀统计当前最大序号（预先初始化所有前缀）
+      const prefixMaxNumbers = {
+        'classic': 0,
+        'fun': 0,
+        'resin': 0,
+        'custom': 0,
+        'frame': 0,
+        'chair': 0,
+        'prod': 0
+      };
       
-      // 先统计已有规范ID的最大序号
+      // 收集所有已存在的ID，用于避免冲突
+      const existingIds = new Set(products.map(p => p._id));
+      
+      // 先统计已有规范ID的最大序号（检查所有前缀）
       for (const product of products) {
-        const categoryId = product.categoryName;
-        const prefix = getCategoryPrefix(categoryId);
-        const match = product._id.match(new RegExp(`^${prefix}(\\d+)$`));
-        
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (!prefixMaxNumbers[prefix] || num > prefixMaxNumbers[prefix]) {
-            prefixMaxNumbers[prefix] = num;
+        for (const prefix of Object.keys(prefixMaxNumbers)) {
+          const match = product._id.match(new RegExp(`^${prefix}(\\d+)$`));
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > prefixMaxNumbers[prefix]) {
+              prefixMaxNumbers[prefix] = num;
+            }
           }
         }
       }
+      
+      if (debugMode) console.log('🔹 当前各前缀最大序号:', prefixMaxNumbers);
 
       // 迁移不规范的ID
       for (const product of products) {
@@ -1521,11 +1815,17 @@ exports.main = async (event, context) => {
         }
 
         try {
-          // 生成新ID
-          prefixMaxNumbers[prefix] = (prefixMaxNumbers[prefix] || 0) + 1;
-          const newId = `${prefix}${prefixMaxNumbers[prefix]}`;
+          // 生成新ID，确保不与现有ID冲突
+          let newId;
+          do {
+            prefixMaxNumbers[prefix] = (prefixMaxNumbers[prefix] || 0) + 1;
+            newId = `${prefix}${prefixMaxNumbers[prefix]}`;
+          } while (existingIds.has(newId));
           
-          if (debugMode) console.log(`🔹 迁移: ${product._id} -> ${newId}`);
+          // 将新ID加入已存在集合
+          existingIds.add(newId);
+          
+          if (debugMode) console.log(`🔹 迁移: ${product._id} -> ${newId} (分类: ${categoryId})`);
 
           // 复制产品数据到新ID
           const newProductData = { ...product };
@@ -1542,6 +1842,8 @@ exports.main = async (event, context) => {
           
           // 删除旧记录
           await collection.doc(product._id).remove();
+          // 从已存在集合中移除旧ID
+          existingIds.delete(product._id);
           
           migrationResults.migrated++;
         } catch (err) {
@@ -1832,6 +2134,304 @@ exports.main = async (event, context) => {
       };
     }
     
+    // ==================== 案例管理 Actions ====================
+    // Requirements: 3.1, 3.2, 3.4, 3.5, 4.5, 4.7
+
+    // 获取案例列表
+    // Requirements: 3.1, 6.1, 6.2, 6.5
+    if (action === 'getCases') {
+      if (debugMode) console.log('🔹 getCases 参数:', data);
+
+      const { includeDisabled = false } = data;
+
+      const collection = db.collection('cases');
+
+      // 构建查询条件
+      const where = {};
+      if (!includeDisabled) {
+        where.status = 1; // 只获取启用的案例
+      }
+
+      try {
+        const result = await collection
+          .where(where)
+          .orderBy('order', 'asc')       // 按 order 升序
+          .orderBy('createTime', 'desc') // 相同 order 时按 createTime 降序（最新的在前）
+          .limit(data.limit || 100)
+          .get();
+
+        if (debugMode) console.log('🔹 getCases 原始数据:', result.data);
+
+        // 格式化案例数据
+        const cases = result.data.map(caseItem => ({
+          _id: caseItem._id,
+          id: caseItem._id,
+          title: caseItem.title || '',
+          description: caseItem.description || '',
+          imageUrl: caseItem.imageUrl || '',
+          order: caseItem.order !== undefined ? caseItem.order : 999,
+          status: caseItem.status !== undefined ? caseItem.status : 1,
+          createTime: caseItem.createTime || null,
+          updateTime: caseItem.updateTime || null
+        }));
+
+        if (debugMode) {
+          console.log('🔹 getCases 返回案例数:', cases.length);
+        }
+
+        return {
+          success: true,
+          data: cases,
+          total: cases.length
+        };
+      } catch (err) {
+        console.error('🔹 getCases 失败:', err);
+        return {
+          success: false,
+          error: '获取案例列表失败: ' + err.message,
+          data: []
+        };
+      }
+    }
+
+    // 新增案例
+    // Requirements: 3.1, 3.2, 3.4, 4.5
+    if (action === 'addCase') {
+      const caseData = data;
+      
+      if (debugMode) console.log('🔹 addCase 参数:', caseData);
+
+      // 验证必填字段
+      const validationResult = validateCaseData(caseData);
+      if (!validationResult.valid) {
+        return {
+          success: false,
+          error: validationResult.errors.join('; ')
+        };
+      }
+
+      const collection = db.collection('cases');
+
+      // 生成案例ID
+      let caseId;
+      if (caseData.customCaseId && caseData.customCaseId.trim()) {
+        // 使用自定义ID
+        caseId = caseData.customCaseId.trim();
+        if (debugMode) console.log('🔹 使用自定义案例ID:', caseId);
+        
+        // 检查ID是否已存在
+        try {
+          const existingCase = await collection.doc(caseId).get();
+          if (existingCase.data) {
+            return {
+              success: false,
+              error: `案例ID "${caseId}" 已存在`
+            };
+          }
+        } catch (err) {
+          // 案例不存在，可以继续创建
+        }
+      } else {
+        // 自动生成案例ID
+        caseId = await generateCaseId();
+        if (debugMode) console.log('🔹 生成的案例ID:', caseId);
+      }
+
+      // 构建案例数据
+      const newCase = {
+        _id: caseId,
+        title: caseData.title ? caseData.title.trim() : '',
+        description: caseData.description !== undefined ? caseData.description : '',
+        imageUrl: caseData.imageUrl !== undefined ? caseData.imageUrl : '',
+        order: caseData.order !== undefined ? caseData.order : 999,
+        status: caseData.status !== undefined ? caseData.status : 1,
+        createTime: db.serverDate(),
+        updateTime: db.serverDate()
+      };
+
+      if (debugMode) console.log('🔹 addCase 新案例数据:', newCase);
+
+      const result = await collection.add({
+        data: newCase
+      });
+
+      if (debugMode) console.log('🔹 addCase 结果:', result);
+
+      return {
+        success: true,
+        id: caseId
+      };
+    }
+
+    // 更新案例
+    // Requirements: 3.5
+    if (action === 'updateCase') {
+      const { id, ...caseData } = data;
+      
+      if (debugMode) console.log('🔹 updateCase 参数:', { id, caseData });
+
+      if (!id) {
+        return {
+          success: false,
+          error: '案例ID不能为空'
+        };
+      }
+
+      const collection = db.collection('cases');
+
+      // 检查案例是否存在并获取现有数据
+      let existingCaseData;
+      try {
+        const existingCase = await collection.doc(id).get();
+        if (!existingCase.data) {
+          return {
+            success: false,
+            error: '案例不存在'
+          };
+        }
+        existingCaseData = existingCase.data;
+      } catch (err) {
+        return {
+          success: false,
+          error: '案例不存在'
+        };
+      }
+
+      // 构建更新数据
+      const updateData = {
+        updateTime: db.serverDate()
+      };
+
+      // 只更新提供的字段
+      if (caseData.title !== undefined) {
+        updateData.title = caseData.title.trim();
+      }
+      if (caseData.description !== undefined) {
+        updateData.description = caseData.description;
+      }
+      if (caseData.order !== undefined) {
+        updateData.order = caseData.order;
+      }
+      if (caseData.status !== undefined) {
+        updateData.status = caseData.status;
+      }
+
+      // 处理图片字段 - 如果新图片与旧图片不同，尝试删除旧图片
+      let deletedOldImage = false;
+      if (caseData.imageUrl !== undefined) {
+        updateData.imageUrl = caseData.imageUrl;
+        
+        const oldImage = existingCaseData.imageUrl;
+        const newImage = caseData.imageUrl;
+        
+        if (oldImage && oldImage !== newImage && oldImage.startsWith('cloud://')) {
+          try {
+            const deleteResult = await cloud.deleteFile({
+              fileList: [oldImage]
+            });
+            if (deleteResult.fileList && deleteResult.fileList[0].status === 0) {
+              deletedOldImage = true;
+              if (debugMode) console.log('🔹 updateCase 删除旧图片成功:', oldImage);
+            }
+          } catch (deleteErr) {
+            console.error('🔹 updateCase 删除旧图片失败:', deleteErr);
+          }
+        }
+      }
+
+      if (debugMode) console.log('🔹 updateCase 更新数据:', updateData);
+
+      const updateResult = await collection.doc(id).update({
+        data: updateData
+      });
+
+      if (debugMode) console.log('🔹 updateCase 结果:', updateResult);
+
+      return {
+        success: true,
+        updated: updateResult.stats ? updateResult.stats.updated : 1,
+        deletedOldImage: deletedOldImage
+      };
+    }
+
+    // 删除案例
+    // Requirements: 4.7, 5.5
+    if (action === 'deleteCase') {
+      const caseId = data.id || event.id;
+      
+      if (debugMode) console.log('🔹 deleteCase 参数:', caseId);
+
+      if (!caseId) {
+        return {
+          success: false,
+          error: '案例ID不能为空'
+        };
+      }
+
+      const collection = db.collection('cases');
+
+      // 检查案例是否存在并获取数据
+      let caseData;
+      try {
+        const existingCase = await collection.doc(caseId).get();
+        if (!existingCase.data) {
+          return {
+            success: false,
+            error: '案例不存在'
+          };
+        }
+        caseData = existingCase.data;
+      } catch (err) {
+        return {
+          success: false,
+          error: '案例不存在'
+        };
+      }
+
+      // 尝试删除云存储中的图片
+      let deletedFile = false;
+      let imageDeleteError = null;
+      if (caseData.imageUrl && caseData.imageUrl.startsWith('cloud://')) {
+        try {
+          const deleteResult = await cloud.deleteFile({
+            fileList: [caseData.imageUrl]
+          });
+          if (deleteResult.fileList && deleteResult.fileList[0].status === 0) {
+            deletedFile = true;
+          }
+        } catch (deleteErr) {
+          console.error('🔹 删除案例图片失败:', deleteErr);
+          imageDeleteError = deleteErr.message || '图片删除失败';
+        }
+      }
+
+      // 删除数据库记录（无论图片删除是否成功）
+      await collection.doc(caseId).remove();
+
+      if (debugMode) console.log('🔹 deleteCase 完成, 删除图片:', deletedFile);
+
+      return {
+        success: true,
+        deletedFile: deletedFile,
+        imageDeleteError: imageDeleteError
+      };
+    }
+
+    // 获取下一个案例ID
+    // Requirements: 3.2, 5.3
+    if (action === 'getNextCaseId') {
+      if (debugMode) console.log('🔹 getNextCaseId');
+
+      const caseId = await generateCaseId();
+
+      if (debugMode) console.log('🔹 getNextCaseId 结果:', caseId);
+
+      return {
+        success: true,
+        nextId: caseId
+      };
+    }
+
     return {
       success: false,
       error: '未知 action'

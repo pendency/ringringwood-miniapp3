@@ -231,3 +231,22 @@ page {
   font-size: 28rpx;
   color: #5D4037;
 }
+
+.qrcode-tips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.qrcode-text-line {
+  font-size: 26rpx;
+  color: #666;
+  text-align: center;
+}
+
+.qrcode-text-highlight {
+  font-size: 28rpx;
+  color: #8B5A2B;
+  font-weight: 500;
+}

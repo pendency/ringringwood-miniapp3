@@ -52,6 +52,14 @@ Page({
 
   onShow: function() {
     // 每次显示页面时检查权限并刷新数据
+    // 🔧 修复：确保 loading 状态被重置，防止页面卡住
+    if (this.data.loading) {
+      this.setData({ loading: false });
+    }
+    if (this.data.loadingMore) {
+      this.setData({ loadingMore: false });
+    }
+    
     if (this.data.isAuthorized) {
       this.refreshProducts();
     }

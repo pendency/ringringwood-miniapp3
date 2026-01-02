@@ -1,6 +1,7 @@
 // scripts/importProducts.js
 // 产品数据导入脚本
-// 从Excel/CSV文件导入产品数据到JSON，并可选自动合并到mock-data.js
+// 从Excel/CSV文件导入产品数据到JSON
+// 注意：数据库是唯一数据源，此脚本仅用于生成JSON文件供参考
 
 const fs = require('fs');
 const path = require('path');
@@ -126,13 +127,19 @@ function transformProducts(rawProducts) {
   
   log(`开始转换 ${rawProducts.length} 个产品数据...`);
   
-  // 分类ID映射
+  // 分类ID映射 - 更新为当前系统分类
   const categoryMap = {
-    '原木经典': 'cat_wood',
+    '经典桌面款': 'cat_classic',
+    '玩趣设计款': 'cat_fun',
+    '树脂设计款': 'cat_resin',
+    '树脂定制款': 'cat_custom',
+    '桌架专区': 'cat_frame',
+    '椅子专区': 'cat_chair',
+    // 兼容旧的分类名称
+    '原木经典': 'cat_classic',
     '树脂美学': 'cat_resin',
-    '玩趣设计': 'cat_design',
-    '高定专属': 'cat_custom',
-    '桌架专区': 'cat_frame'
+    '玩趣设计': 'cat_fun',
+    '高定专属': 'cat_custom'
   };
   
   // 产品ID集合，用于检查重复
@@ -165,27 +172,52 @@ function transformProducts(rawProducts) {
         continue;
       }
       
-      // 处理图片路径，将绝对路径转换为相对路径
-      const imageUrls = [];
+      // 处理主图（封面图）- 用于列表展示
+      const mainImageUrl = rawProduct['主图URL'] ? rawProduct['主图URL'].trim() : '';
+      
+      // 处理详情图 - 用于产品详情页轮播和展示
+      const detailImages = [];
       for (let i = 1; i <= 10; i++) {
-        const imageField = `图片URL${i}`;
+        const imageField = `详情图URL${i}`;
         if (rawProduct[imageField] && rawProduct[imageField].trim()) {
-          const imagePath = rawProduct[imageField].trim();
-          // 提取文件名，转换为相对路径
-          const fileName = path.basename(imagePath);
-          // 根据产品ID前缀确定图片目录
-          let imageDir = '';
-          if (productId.startsWith('wood')) {
-            imageDir = 'products';
-          } else if (productId.startsWith('custom')) {
-            imageDir = 'products';
-          } else if (productId.startsWith('design')) {
-            imageDir = 'products';
-          } else {
-            imageDir = 'products';
+          detailImages.push(rawProduct[imageField].trim());
+        }
+      }
+      
+      // 兼容旧格式：如果没有新字段，使用旧的图片URL字段
+      if (!mainImageUrl && !detailImages.length) {
+        // 旧格式：图片URL1 作为主图，图片URL2-10 作为详情图
+        for (let i = 1; i <= 10; i++) {
+          const imageField = `图片URL${i}`;
+          if (rawProduct[imageField] && rawProduct[imageField].trim()) {
+            if (i === 1) {
+              // 第一张作为主图（如果没有单独的主图字段）
+            } else {
+              detailImages.push(rawProduct[imageField].trim());
+            }
           }
-          
-          imageUrls.push(`/images/${imageDir}/${fileName}`);
+        }
+        // 如果有旧格式的图片URL1，用作主图
+        if (rawProduct['图片URL1'] && rawProduct['图片URL1'].trim()) {
+          if (!mainImageUrl) {
+            // mainImageUrl 已经是空的，需要重新赋值
+          }
+        }
+      }
+      
+      // 最终的主图URL
+      let finalMainImageUrl = mainImageUrl;
+      if (!finalMainImageUrl && rawProduct['图片URL1']) {
+        finalMainImageUrl = rawProduct['图片URL1'].trim();
+      }
+      
+      // 如果详情图为空但有旧格式的图片URL2-10，使用它们
+      if (detailImages.length === 0) {
+        for (let i = 2; i <= 10; i++) {
+          const imageField = `图片URL${i}`;
+          if (rawProduct[imageField] && rawProduct[imageField].trim()) {
+            detailImages.push(rawProduct[imageField].trim());
+          }
         }
       }
       
@@ -231,8 +263,11 @@ function transformProducts(rawProducts) {
         price: price,
         originalPrice: price,
         categoryId: categoryId,
-        imageUrls: imageUrls.length > 0 ? [imageUrls[0]] : [],
-        images: imageUrls.slice(1), // 第一张图作为主图，其余作为详情图
+        // 主图（封面图）- 用于分类页面、列表展示
+        imageUrl: finalMainImageUrl || '',
+        imageUrls: finalMainImageUrl ? [finalMainImageUrl] : [],
+        // 详情图 - 用于产品详情页轮播和展示
+        images: detailImages,
         features: [],
         params: params,
         isHot: isHot,

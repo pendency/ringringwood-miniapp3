@@ -50,7 +50,7 @@
               bindtap="navigateToDetail" 
               data-id="{{item._id}}">
           <image class="favorite-img" 
-                 src="{{item.imageUrls[0] || '/images/banner1.jpeg'}}" 
+                 src="{{item.imageUrls[0] || 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/banners/banner1.jpeg'}}" 
                  mode="aspectFill"
                  lazy-load="{{true}}"
                  binderror="onImageError"
@@ -87,9 +87,10 @@
         <view class="qrcode-close" bindtap="hideContactQRCode">×</view>
       </view>
       <view class="qrcode-container">
-        <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpeg" 
+        <image src="cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpg" 
                mode="aspectFit" 
-               class="qrcode-image"></image>
+               class="qrcode-image"
+               show-menu-by-longpress="{{true}}"></image>
         <text class="qrcode-text">长按保存二维码，微信扫码添加客服</text>
       </view>
     </view>

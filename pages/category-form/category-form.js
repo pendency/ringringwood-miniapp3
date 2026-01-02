@@ -18,6 +18,7 @@ Page({
     isAuthorized: false,
     formData: {
       name: '',
+      categoryCode: '', // 自定义分类ID，用于CSV导入匹配
       description: '',
       icon: '',
       image: '',
@@ -127,6 +128,7 @@ Page({
         this.setData({
           formData: {
             name: category.name || '',
+            categoryCode: category._id || '', // 编辑模式显示当前分类ID
             description: category.description || '',
             icon: category.icon || '',
             image: category.image || '',

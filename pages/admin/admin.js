@@ -1,5 +1,5 @@
 // admin.js
-const { uploadProductImages, uploadBannerImage, uploadCategoryImage } = require('../../utils/cloudUploader.js');
+const { uploadProductImages, uploadBannerImage, uploadCategoryImage, uploadCaseImage } = require('../../utils/cloudUploader.js');
 const ProductModel = require('../../models/product.js');
 const CategoryModel = require('../../models/category.js');
 const { migrateDataInMiniProgram } = require('../../scripts/migrate-to-cloud.js');
@@ -7,6 +7,9 @@ const { testCloudFunctionInMiniProgram } = require('../../scripts/test-cloud-fun
 const AdminAuth = require('../../utils/admin-auth.js');
 const csvProcessor = require('../../utils/csv-processor.js');
 const DataBackup = require('../../utils/data-backup.js');
+const { sortBanners, validateBannerData } = require('../../utils/bannerManager.js');
+const caseAdminManager = require('../../utils/caseAdminManager.js');
+const { validateCaseData, validateImageFile, sortCases } = require('../../utils/caseManager.js');
 const fs = wx.getFileSystemManager();
 
 Page({
@@ -49,13 +52,42 @@ Page({
     editingBannerId: '', // 正在编辑的轮播图ID
     bannerFormData: { // 轮播图表单数据
       image: '',
+      imageTemp: '', // 用于预览的临时URL
       title: '',
       subtitle: '',
       order: 999,
       status: 1,
-      productId: ''
+      linkType: 'none', // 跳转类型：none-无跳转, product-产品详情, category-分类页面
+      productId: '',
+      categoryId: ''
     },
-    bannerSaving: false // 轮播图保存状态
+    bannerLinkTypes: [ // 跳转类型选项
+      { value: 'none', label: '无跳转' },
+      { value: 'product', label: '跳转产品详情' },
+      { value: 'category', label: '跳转分类页面' }
+    ],
+    bannerSaving: false, // 轮播图保存状态
+    
+    // 分类图片上传相关
+    selectedCategoryForUpload: null,  // 选中用于上传的分类对象
+    categoryUploadType: '',           // 上传类型: 'icon' 或 'image'
+    categoryTempImage: '',            // 临时图片路径（用于预览）
+    categoryUploading: false,         // 上传中状态
+    
+    // 案例管理相关
+    cases: [],                        // 案例列表
+    casesLoading: false,              // 案例加载状态
+    showCaseForm: false,              // 是否显示案例表单
+    editingCaseId: '',                // 正在编辑的案例ID
+    caseFormData: {                   // 案例表单数据
+      imageUrl: '',
+      imageTemp: '',                  // 用于预览的临时URL
+      title: '',
+      description: '',
+      order: 999,
+      status: 1
+    },
+    caseSaving: false                 // 案例保存状态
   },
   
   onLoad: async function() {
@@ -106,24 +138,24 @@ Page({
   // 页面显示时触发 - 确保从其他页面返回时状态正确
   onShow: function() {
     console.log('管理后台页面显示');
-    // 确保 loading 状态被重置，防止按钮被禁用
+    
+    // 🔧 修复：只重置 loading 相关状态，不重置弹窗状态
+    // 因为从相册选择图片返回时也会触发 onShow，不能关闭弹窗
     if (this.data.loading) {
       this.setData({ loading: false });
     }
-    // 确保没有遗留的运行状态
     if (this.data.importRunning) {
-      // 如果导入状态异常，重置它
-      console.log('检测到导入状态异常，重置中...');
       this.setData({ importRunning: false });
     }
     if (this.data.migrationRunning) {
-      // 如果迁移状态异常，重置它
-      console.log('检测到迁移状态异常，重置中...');
       this.setData({ migrationRunning: false });
     }
     
-    // 🆕 刷新分类数据，确保快速预览显示最新数据
-    this.refreshCategoriesData();
+    // 只在分类管理标签页激活时才刷新分类数据，避免不必要的网络请求
+    // 这样可以提高页面响应速度
+    if (this.data.activeTab === 'categories') {
+      this.refreshCategoriesData();
+    }
   },
   
   // 🆕 刷新分类数据（用于快速预览同步）
@@ -286,6 +318,11 @@ Page({
     if (tab === 'banners') {
       this.loadBanners();
     }
+    
+    // 切换到案例管理时加载案例数据
+    if (tab === 'cases') {
+      this.loadCases();
+    }
   },
   
   // 选择产品
@@ -306,6 +343,178 @@ Page({
     if (category) {
       this.setData({ currentCategory: category });
     }
+  },
+  
+  // 分类选择器变更处理（用于分类图片上传）
+  onCategorySelectChange(e) {
+    const index = e.detail.value;
+    const category = this.data.categories[index];
+    this.setData({
+      selectedCategoryForUpload: category || null,
+      categoryTempImage: ''  // 清除之前的临时图片
+    });
+  },
+  
+  // 重置分类上传状态
+  resetCategoryUploadState() {
+    this.setData({
+      selectedCategoryForUpload: null,
+      categoryUploadType: '',
+      categoryTempImage: '',
+      categoryUploading: false
+    });
+  },
+  
+  // 选择分类图标上传（新版分类图片上传功能）
+  chooseCategoryIconForUpload() {
+    // 检查是否已选择分类
+    if (!this.data.selectedCategoryForUpload) {
+      wx.showToast({
+        title: '请先选择分类',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 调用 wx.chooseMedia 选择图片
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: res => {
+        const tempFiles = res.tempFiles;
+        if (tempFiles && tempFiles.length > 0) {
+          // 设置上传类型为 'icon'，设置临时图片路径
+          this.setData({
+            categoryUploadType: 'icon',
+            categoryTempImage: tempFiles[0].tempFilePath
+          });
+        }
+      },
+      fail: err => {
+        // 用户取消选择，静默处理
+        console.log('用户取消选择图片:', err);
+      }
+    });
+  },
+  
+  // 选择分类图片上传（新版分类图片上传功能）
+  chooseCategoryImageForUpload() {
+    // 检查是否已选择分类
+    if (!this.data.selectedCategoryForUpload) {
+      wx.showToast({
+        title: '请先选择分类',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 调用 wx.chooseMedia 选择图片
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: res => {
+        const tempFiles = res.tempFiles;
+        if (tempFiles && tempFiles.length > 0) {
+          // 设置上传类型为 'image'，设置临时图片路径
+          this.setData({
+            categoryUploadType: 'image',
+            categoryTempImage: tempFiles[0].tempFilePath
+          });
+        }
+      },
+      fail: err => {
+        // 用户取消选择，静默处理
+        console.log('用户取消选择图片:', err);
+      }
+    });
+  },
+  
+  // 确认上传分类图片（新版分类图片上传功能）
+  async confirmCategoryImageUpload() {
+    // 检查必要条件
+    if (!this.data.selectedCategoryForUpload || !this.data.categoryTempImage || !this.data.categoryUploadType) {
+      wx.showToast({
+        title: '请先选择分类和图片',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    try {
+      // 设置上传中状态
+      this.setData({ categoryUploading: true });
+      
+      // 上传图片到云存储
+      const fileID = await uploadCategoryImage(
+        this.data.categoryTempImage,
+        this.data.selectedCategoryForUpload.name,
+        this.data.categoryUploadType
+      );
+      
+      if (!fileID) {
+        throw new Error('上传失败，请重试');
+      }
+      
+      // 构建更新数据，只更新对应的字段（icon 或 image）
+      const updateData = {
+        id: this.data.selectedCategoryForUpload._id
+      };
+      updateData[this.data.categoryUploadType] = fileID;
+      
+      // 调用云函数更新分类数据
+      const result = await wx.cloud.callFunction({
+        name: 'productManager',
+        data: {
+          action: 'updateCategory',
+          data: updateData
+        }
+      });
+      
+      if (!result.result || !result.result.success) {
+        throw new Error(result.result?.error || '更新失败，请重试');
+      }
+      
+      // 成功处理
+      wx.showToast({
+        title: '上传成功',
+        icon: 'success'
+      });
+      
+      // 刷新分类列表
+      await this.refreshCategoriesData();
+      
+      // 重置上传状态
+      this.resetCategoryUploadState();
+      
+    } catch (error) {
+      console.error('分类图片上传失败:', error);
+      
+      // 错误处理
+      let errorMessage = error.message || '操作失败，请重试';
+      if (error.message && error.message.includes('network')) {
+        errorMessage = '网络连接失败，请检查网络后重试';
+      }
+      
+      wx.showModal({
+        title: '上传失败',
+        content: errorMessage,
+        showCancel: false
+      });
+    } finally {
+      // 重置上传中状态
+      this.setData({ categoryUploading: false });
+    }
+  },
+  
+  // 取消上传分类图片（新版分类图片上传功能）
+  cancelCategoryImageUpload() {
+    // 清除临时图片和上传类型
+    this.setData({
+      categoryTempImage: '',
+      categoryUploadType: ''
+    });
   },
   
   // 选择图片
@@ -651,15 +860,13 @@ Page({
   createDefaultConfig() {
     const configContent = `// import.config.js
 // 产品数据导入配置文件
+// 注意：数据库是唯一数据源
 module.exports = {
   // CSV 源文件路径
   inputFilePath: '${wx.env.USER_DATA_PATH}/产品信息管理模板.csv',
 
   // 生成的中间 JSON 文件
   outputJsonPath: '${wx.env.USER_DATA_PATH}/generated-products.json',
-
-  // 是否自动写入 utils/mock-data.js -> mockProducts
-  autoInjectToMockData: true,
 
   // 导入日志
   logFilePath: '${wx.env.USER_DATA_PATH}/import-log.txt',
@@ -849,11 +1056,17 @@ module.exports = {
     
     // 分类ID映射
     const categoryMap = {
-      '原木经典': 'cat_wood',
+      '经典桌面款': 'cat_classic',
+      '玩趣设计款': 'cat_fun',
+      '树脂设计款': 'cat_resin',
+      '树脂定制款': 'cat_custom',
+      '桌架专区': 'cat_frame',
+      '椅子专区': 'cat_chair',
+      // 兼容旧的分类名称
+      '原木经典': 'cat_classic',
       '树脂美学': 'cat_resin',
-      '玩趣设计': 'cat_design',
-      '高定专属': 'cat_custom',
-      '桌架专区': 'cat_frame'
+      '玩趣设计': 'cat_fun',
+      '高定专属': 'cat_custom'
     };
     
     // 产品ID集合，用于检查重复
@@ -1814,12 +2027,27 @@ module.exports = {
       console.log('[Admin] 加载轮播图结果:', result);
       
       if (result.result && result.result.success) {
+        const rawBanners = result.result.data || [];
+        
+        // 使用 bannerManager 的 sortBanners 函数进行排序
+        // Requirements: 5.2 - 按 order 升序排序，相同 order 时按 createTime 排序
+        const sortedBanners = sortBanners(rawBanners);
+        
+        // 处理空列表情况
+        // Requirements: 5.5 - 空列表时显示提示信息
+        if (sortedBanners.length === 0) {
+          console.log('[Admin] 轮播图列表为空');
+        }
+        
         this.setData({
-          banners: result.result.data || [],
+          banners: sortedBanners,
           bannersLoading: false
         });
       } else {
-        this.setData({ bannersLoading: false });
+        this.setData({ 
+          banners: [],
+          bannersLoading: false 
+        });
         wx.showToast({
           title: result.result?.error || '加载轮播图失败',
           icon: 'none'
@@ -1827,7 +2055,10 @@ module.exports = {
       }
     } catch (error) {
       console.error('[Admin] 加载轮播图失败:', error);
-      this.setData({ bannersLoading: false });
+      this.setData({ 
+        banners: [],
+        bannersLoading: false 
+      });
       wx.showToast({
         title: '加载轮播图失败',
         icon: 'none'
@@ -1851,11 +2082,14 @@ module.exports = {
       editingBannerId: '',
       bannerFormData: {
         image: '',
+        imageTemp: '', // 用于预览的临时URL
         title: '',
         subtitle: '',
         order: 999,
         status: 1,
-        productId: ''
+        linkType: 'none',
+        productId: '',
+        categoryId: ''
       }
     });
   },
@@ -1863,21 +2097,47 @@ module.exports = {
   /**
    * 编辑轮播图
    */
-  editBanner(e) {
+  async editBanner(e) {
     const id = e.currentTarget.dataset.id;
     const banner = this.data.banners.find(b => b._id === id);
     
     if (banner) {
+      // 获取图片的临时URL用于预览
+      let imageTemp = banner.image || '';
+      if (banner.image && banner.image.startsWith('cloud://')) {
+        try {
+          const result = await wx.cloud.getTempFileURL({
+            fileList: [banner.image]
+          });
+          if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+            imageTemp = result.fileList[0].tempFileURL;
+          }
+        } catch (error) {
+          console.error('获取临时URL失败:', error);
+        }
+      }
+      
+      // 根据已有数据判断跳转类型
+      let linkType = 'none';
+      if (banner.categoryId) {
+        linkType = 'category';
+      } else if (banner.productId) {
+        linkType = 'product';
+      }
+      
       this.setData({
         showBannerForm: true,
         editingBannerId: id,
         bannerFormData: {
           image: banner.image || '',
+          imageTemp: imageTemp,
           title: banner.title || '',
           subtitle: banner.subtitle || '',
           order: banner.order !== undefined ? banner.order : 999,
           status: banner.status !== undefined ? banner.status : 1,
-          productId: banner.productId || ''
+          linkType: linkType,
+          productId: banner.productId || '',
+          categoryId: banner.categoryId || ''
         }
       });
     }
@@ -1892,13 +2152,23 @@ module.exports = {
       editingBannerId: '',
       bannerFormData: {
         image: '',
+        imageTemp: '', // 重置临时预览URL
         title: '',
         subtitle: '',
         order: 999,
         status: 1,
-        productId: ''
+        linkType: 'none',
+        productId: '',
+        categoryId: ''
       }
     });
+  },
+
+  /**
+   * 阻止事件冒泡（用于弹窗内容区域）
+   */
+  preventBubble() {
+    // 空函数，仅用于阻止事件冒泡
   },
 
   /**
@@ -1915,8 +2185,10 @@ module.exports = {
         wx.showLoading({ title: '上传中...', mask: true });
         
         try {
-          // 上传图片到云存储
-          const cloudPath = `ui/banners/banner_${Date.now()}.jpeg`;
+          // 获取文件扩展名
+          const extension = tempFilePath.split('.').pop().toLowerCase() || 'jpeg';
+          // 上传图片到云存储 - 使用规范化路径 banners/banner_{timestamp}.{extension}
+          const cloudPath = `banners/banner_${Date.now()}.${extension}`;
           const uploadResult = await wx.cloud.uploadFile({
             cloudPath,
             filePath: tempFilePath
@@ -1925,8 +2197,19 @@ module.exports = {
           wx.hideLoading();
           
           if (uploadResult.fileID) {
+            // 🔧 修复：获取临时URL用于预览显示
+            const tempUrlResult = await wx.cloud.getTempFileURL({
+              fileList: [uploadResult.fileID]
+            });
+            
+            let displayUrl = uploadResult.fileID;
+            if (tempUrlResult.fileList && tempUrlResult.fileList[0] && tempUrlResult.fileList[0].tempFileURL) {
+              displayUrl = tempUrlResult.fileList[0].tempFileURL;
+            }
+            
             this.setData({
-              'bannerFormData.image': uploadResult.fileID
+              'bannerFormData.image': uploadResult.fileID,
+              'bannerFormData.imageTemp': displayUrl // 用于预览的临时URL
             });
             wx.showToast({ title: '上传成功', icon: 'success' });
           } else {
@@ -1937,6 +2220,10 @@ module.exports = {
           console.error('[Admin] 上传轮播图图片失败:', error);
           wx.showToast({ title: '上传失败', icon: 'none' });
         }
+      },
+      fail: (error) => {
+        // 用户取消选择或选择失败，不做任何处理
+        console.log('[Admin] 用户取消选择图片或选择失败:', error);
       }
     });
   },
@@ -1978,6 +2265,19 @@ module.exports = {
   },
 
   /**
+   * 轮播图跳转类型切换
+   */
+  onBannerLinkTypeChange(e) {
+    const linkType = this.data.bannerLinkTypes[e.detail.value].value;
+    this.setData({
+      'bannerFormData.linkType': linkType,
+      // 切换类型时清空对应的ID
+      'bannerFormData.productId': linkType === 'product' ? this.data.bannerFormData.productId : '',
+      'bannerFormData.categoryId': linkType === 'category' ? this.data.bannerFormData.categoryId : ''
+    });
+  },
+
+  /**
    * 轮播图关联产品ID输入
    */
   onBannerProductIdInput(e) {
@@ -1987,18 +2287,43 @@ module.exports = {
   },
 
   /**
+   * 轮播图关联分类选择
+   */
+  onBannerCategoryChange(e) {
+    const categoryIndex = e.detail.value;
+    const category = this.data.categories[categoryIndex];
+    if (category) {
+      this.setData({
+        'bannerFormData.categoryId': category._id
+      });
+    }
+  },
+
+  /**
    * 保存轮播图
    */
   async saveBanner() {
     const { bannerFormData, editingBannerId } = this.data;
     
-    // 验证必填字段
-    if (!bannerFormData.image) {
-      wx.showToast({ title: '请上传轮播图图片', icon: 'none' });
+    // 使用 bannerManager 的 validateBannerData 函数进行数据验证
+    // Requirements: 2.1, 7.3
+    const validation = validateBannerData(bannerFormData);
+    
+    if (!validation.valid) {
+      // 显示第一个验证错误
+      wx.showToast({ 
+        title: validation.errors[0] || '数据验证失败', 
+        icon: 'none' 
+      });
+      console.warn('[Admin] 轮播图数据验证失败:', validation.errors);
       return;
     }
     
     this.setData({ bannerSaving: true });
+    
+    // 根据跳转类型设置对应的ID
+    const productId = bannerFormData.linkType === 'product' ? bannerFormData.productId : '';
+    const categoryId = bannerFormData.linkType === 'category' ? bannerFormData.categoryId : '';
     
     try {
       let result;
@@ -2016,7 +2341,9 @@ module.exports = {
               subtitle: bannerFormData.subtitle,
               order: bannerFormData.order,
               status: bannerFormData.status,
-              productId: bannerFormData.productId
+              linkType: bannerFormData.linkType,
+              productId: productId,
+              categoryId: categoryId
             }
           }
         });
@@ -2032,7 +2359,9 @@ module.exports = {
               subtitle: bannerFormData.subtitle,
               order: bannerFormData.order,
               status: bannerFormData.status,
-              productId: bannerFormData.productId
+              linkType: bannerFormData.linkType,
+              productId: productId,
+              categoryId: categoryId
             }
           }
         });
@@ -2098,6 +2427,389 @@ module.exports = {
           } catch (error) {
             wx.hideLoading();
             console.error('[Admin] 删除轮播图失败:', error);
+            wx.showToast({ title: '删除失败', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
+
+  // ==================== 案例管理方法 ====================
+
+  /**
+   * 加载案例列表
+   * Requirements: 4.2
+   */
+  async loadCases() {
+    this.setData({ casesLoading: true });
+    
+    try {
+      const cases = await caseAdminManager.getAllCases();
+      
+      console.log('[Admin] 加载案例结果:', cases);
+      
+      // 使用 caseManager 的 sortCases 函数进行排序
+      const sortedCases = sortCases(cases);
+      
+      // 处理空列表情况
+      if (sortedCases.length === 0) {
+        console.log('[Admin] 案例列表为空');
+      }
+      
+      this.setData({
+        cases: sortedCases,
+        casesLoading: false
+      });
+    } catch (error) {
+      console.error('[Admin] 加载案例失败:', error);
+      this.setData({ 
+        cases: [],
+        casesLoading: false 
+      });
+      wx.showToast({
+        title: '加载案例失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  /**
+   * 刷新案例列表
+   */
+  refreshCases() {
+    this.loadCases();
+  },
+
+  /**
+   * 显示新增案例表单
+   * Requirements: 4.3
+   */
+  showAddCaseForm() {
+    this.setData({
+      showCaseForm: true,
+      editingCaseId: '',
+      caseFormData: {
+        imageUrl: '',
+        imageTemp: '',
+        title: '',
+        description: '',
+        order: 999,
+        status: 1
+      }
+    });
+  },
+
+  /**
+   * 编辑案例
+   * Requirements: 4.6
+   */
+  async editCase(e) {
+    const id = e.currentTarget.dataset.id;
+    const caseItem = this.data.cases.find(c => c._id === id);
+    
+    if (caseItem) {
+      // 获取图片的临时URL用于预览
+      let imageTemp = caseItem.imageUrl || '';
+      if (caseItem.imageUrl && caseItem.imageUrl.startsWith('cloud://')) {
+        try {
+          const result = await wx.cloud.getTempFileURL({
+            fileList: [caseItem.imageUrl]
+          });
+          if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+            imageTemp = result.fileList[0].tempFileURL;
+          }
+        } catch (error) {
+          console.error('获取临时URL失败:', error);
+        }
+      }
+      
+      // 预填充表单数据
+      // Requirements: 4.6 - 编辑时预填充所有现有字段值
+      this.setData({
+        showCaseForm: true,
+        editingCaseId: id,
+        caseFormData: {
+          imageUrl: caseItem.imageUrl || '',
+          imageTemp: imageTemp,
+          title: caseItem.title || '',
+          description: caseItem.description || '',
+          order: caseItem.order !== undefined ? caseItem.order : 999,
+          status: caseItem.status !== undefined ? caseItem.status : 1
+        }
+      });
+    }
+  },
+
+  /**
+   * 关闭案例表单
+   */
+  closeCaseForm() {
+    this.setData({
+      showCaseForm: false,
+      editingCaseId: '',
+      caseFormData: {
+        imageUrl: '',
+        imageTemp: '',
+        title: '',
+        description: '',
+        order: 999,
+        status: 1
+      }
+    });
+  },
+
+  /**
+   * 选择案例图片
+   * Requirements: 4.4
+   */
+  chooseCaseImage() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath;
+        const fileSize = res.tempFiles[0].size;
+        
+        // 验证图片格式和大小
+        // Requirements: 4.4 - 验证图片格式(jpg, jpeg, png)和大小(max 2MB)
+        const validation = validateImageFile(tempFilePath, fileSize);
+        if (!validation.valid) {
+          wx.showToast({
+            title: validation.error,
+            icon: 'none'
+          });
+          return;
+        }
+        
+        // 如果是编辑模式，立即上传图片
+        if (this.data.editingCaseId) {
+          wx.showLoading({ title: '上传中...', mask: true });
+          
+          try {
+            // 上传图片到云存储
+            const fileID = await uploadCaseImage(tempFilePath, this.data.editingCaseId);
+            
+            wx.hideLoading();
+            
+            if (fileID) {
+              // 获取临时URL用于预览显示
+              const tempUrlResult = await wx.cloud.getTempFileURL({
+                fileList: [fileID]
+              });
+              
+              let displayUrl = fileID;
+              if (tempUrlResult.fileList && tempUrlResult.fileList[0] && tempUrlResult.fileList[0].tempFileURL) {
+                displayUrl = tempUrlResult.fileList[0].tempFileURL;
+              }
+              
+              this.setData({
+                'caseFormData.imageUrl': fileID,
+                'caseFormData.imageTemp': displayUrl
+              });
+              wx.showToast({ title: '上传成功', icon: 'success' });
+            } else {
+              wx.showToast({ title: '上传失败', icon: 'none' });
+            }
+          } catch (error) {
+            wx.hideLoading();
+            console.error('[Admin] 上传案例图片失败:', error);
+            wx.showToast({ title: error.message || '上传失败', icon: 'none' });
+          }
+        } else {
+          // 新增模式：只保存临时图片路径，在保存案例时再上传
+          this.setData({
+            'caseFormData.imageTemp': tempFilePath,
+            'caseFormData.imageUrl': '' // 清空，表示需要上传
+          });
+          console.log('[Admin] 新增案例：已选择图片，保存临时路径:', tempFilePath);
+        }
+      },
+      fail: (error) => {
+        // 用户取消选择或选择失败，不做任何处理
+        console.log('[Admin] 用户取消选择图片或选择失败:', error);
+      }
+    });
+  },
+
+  /**
+   * 案例标题输入
+   */
+  onCaseTitleInput(e) {
+    this.setData({
+      'caseFormData.title': e.detail.value
+    });
+  },
+
+  /**
+   * 案例描述输入
+   */
+  onCaseDescriptionInput(e) {
+    this.setData({
+      'caseFormData.description': e.detail.value
+    });
+  },
+
+  /**
+   * 案例排序输入
+   */
+  onCaseOrderInput(e) {
+    this.setData({
+      'caseFormData.order': parseInt(e.detail.value) || 999
+    });
+  },
+
+  /**
+   * 案例状态切换
+   */
+  onCaseStatusChange(e) {
+    this.setData({
+      'caseFormData.status': e.detail.value ? 1 : 0
+    });
+  },
+
+  /**
+   * 保存案例
+   * Requirements: 4.5
+   */
+  async saveCase() {
+    const { caseFormData, editingCaseId } = this.data;
+    
+    // 使用 caseManager 的 validateCaseData 函数进行数据验证
+    const validation = validateCaseData(caseFormData);
+    
+    if (!validation.valid) {
+      // 显示第一个验证错误
+      wx.showToast({ 
+        title: validation.errors[0] || '数据验证失败', 
+        icon: 'none' 
+      });
+      console.warn('[Admin] 案例数据验证失败:', validation.errors);
+      return;
+    }
+    
+    this.setData({ caseSaving: true });
+    
+    try {
+      let result;
+      
+      if (editingCaseId) {
+        // 更新案例
+        result = await caseAdminManager.updateCase(editingCaseId, {
+          title: caseFormData.title,
+          description: caseFormData.description,
+          imageUrl: caseFormData.imageUrl,
+          order: caseFormData.order,
+          status: caseFormData.status
+        });
+      } else {
+        // 新增案例
+        // 1. 先创建案例记录（不带图片或带临时图片路径）
+        const createResult = await caseAdminManager.createCase({
+          title: caseFormData.title,
+          description: caseFormData.description,
+          imageUrl: '', // 先不设置图片
+          order: caseFormData.order,
+          status: caseFormData.status
+        });
+        
+        if (!createResult.success) {
+          throw new Error(createResult.error || '创建案例失败');
+        }
+        
+        const newCaseId = createResult.id;
+        console.log('[Admin] 新案例创建成功，ID:', newCaseId);
+        
+        // 2. 如果有临时图片，上传图片并更新记录
+        if (caseFormData.imageTemp && !caseFormData.imageUrl) {
+          wx.showLoading({ title: '上传图片中...', mask: true });
+          
+          try {
+            const fileID = await uploadCaseImage(caseFormData.imageTemp, newCaseId);
+            
+            if (fileID) {
+              // 更新案例的图片URL
+              await caseAdminManager.updateCase(newCaseId, {
+                title: caseFormData.title,
+                description: caseFormData.description,
+                imageUrl: fileID,
+                order: caseFormData.order,
+                status: caseFormData.status
+              });
+              console.log('[Admin] 案例图片上传成功:', fileID);
+            }
+          } catch (uploadError) {
+            console.error('[Admin] 上传案例图片失败:', uploadError);
+            // 图片上传失败不影响案例创建，只是没有图片
+            wx.showToast({ 
+              title: '案例已创建，但图片上传失败', 
+              icon: 'none',
+              duration: 2000
+            });
+          } finally {
+            wx.hideLoading();
+          }
+        }
+        
+        result = { success: true };
+      }
+      
+      console.log('[Admin] 保存案例结果:', result);
+      
+      this.setData({ caseSaving: false });
+      
+      if (result.success) {
+        wx.showToast({
+          title: editingCaseId ? '更新成功' : '新增成功',
+          icon: 'success'
+        });
+        this.closeCaseForm();
+        this.loadCases();
+      } else {
+        wx.showToast({
+          title: result.error || '保存失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      console.error('[Admin] 保存案例失败:', error);
+      this.setData({ caseSaving: false });
+      wx.showToast({ title: error.message || '保存失败', icon: 'none' });
+    }
+  },
+
+  /**
+   * 删除案例
+   * Requirements: 4.7
+   */
+  deleteCase(e) {
+    const id = e.currentTarget.dataset.id;
+    
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这个案例吗？删除后将同时删除云存储中的图片。',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中...', mask: true });
+          
+          try {
+            // Requirements: 4.7 - 删除数据库记录和云存储图片
+            const result = await caseAdminManager.deleteCase(id);
+            
+            wx.hideLoading();
+            
+            if (result.success) {
+              wx.showToast({ title: '删除成功', icon: 'success' });
+              this.loadCases();
+            } else {
+              wx.showToast({
+                title: result.error || '删除失败',
+                icon: 'none'
+              });
+            }
+          } catch (error) {
+            wx.hideLoading();
+            console.error('[Admin] 删除案例失败:', error);
             wx.showToast({ title: '删除失败', icon: 'none' });
           }
         }

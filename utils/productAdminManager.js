@@ -169,6 +169,7 @@ class ProductAdminManager {
             categoryId: product.categoryId,
             imageUrls: product.imageUrls || [],
             images: product.images || [],
+            videoUrl: product.videoUrl || '', // 产品视频URL
             features: product.features || [],
             params: product.params || [],
             isHot: product.isHot || false,
@@ -248,6 +249,7 @@ class ProductAdminManager {
             categoryId: product.categoryId,
             imageUrls: product.imageUrls,
             images: product.images,
+            videoUrl: product.videoUrl, // 产品视频URL
             features: product.features,
             params: product.params,
             isHot: product.isHot,

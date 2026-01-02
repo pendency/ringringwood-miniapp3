@@ -5,8 +5,8 @@
   <!-- 导航栏 -->
   <navigation-bar title="{{mode === 'add' ? '新增分类' : '编辑分类'}}" showBack="{{true}}" bindback="navigateBack" />
   
-  <!-- 内容区域 -->
-  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+  <!-- 内容区域 - 使用scroll-view实现滚动 -->
+  <scroll-view class="content-container" scroll-y="true" style="padding-top: {{contentPaddingTop}}px;">
     <!-- 加载中 -->
     <view class="loading" wx:if="{{loading}}">
       <text>加载中...</text>
@@ -26,6 +26,22 @@
           maxlength="20"
         />
         <view class="error-text" wx:if="{{errors.name}}">{{errors.name}}</view>
+      </view>
+
+      <!-- 分类ID（用于CSV导入匹配） -->
+      <view class="form-group">
+        <view class="form-label">分类ID</view>
+        <input 
+          class="form-input {{errors.categoryCode ? 'input-error' : ''}}"
+          placeholder="如：cat_resin（用于CSV导入匹配）"
+          value="{{formData.categoryCode}}"
+          bindinput="onInputChange"
+          data-field="categoryCode"
+          maxlength="50"
+          disabled="{{mode === 'edit'}}"
+        />
+        <view class="form-hint">{{mode === 'edit' ? '分类ID创建后不可修改' : '自定义ID，用于CSV导入时匹配分类，留空则自动生成'}}</view>
+        <view class="error-text" wx:if="{{errors.categoryCode}}">{{errors.categoryCode}}</view>
       </view>
 
       <!-- 分类描述 -->
@@ -107,5 +123,5 @@
         </button>
       </view>
     </view>
-  </view>
+  </scroll-view>
 </view>

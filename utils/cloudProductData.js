@@ -29,7 +29,7 @@ class CloudProductData {
         data: {
           action: 'getProducts',
           data: {
-            limit: options.limit || -1, // 默认获取所有数据
+            limit: options.limit || 100, // 默认获取100条数据
             includeHidden: options.includeHidden || false,
             categoryId: options.categoryId,
             isHot: options.isHot,

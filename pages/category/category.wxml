@@ -59,11 +59,132 @@
       
       <!-- 右侧产品内容区域 -->
       <view class="content-area">
+        <!-- 搜索栏和筛选按钮 - Requirements: 1.1, 4.1, 4.5, 7.1 -->
+        <view class="search-filter-container">
+          <view class="search-bar-container">
+            <view class="search-bar">
+              <image class="search-icon" src="/images/search.png" mode="aspectFit"></image>
+              <input 
+                class="search-input" 
+                type="text" 
+                placeholder="搜索" 
+                placeholder-class="search-placeholder"
+                value="{{searchInputValue}}"
+                bindinput="onSearchInput"
+                bindconfirm="onSearchConfirm"
+                confirm-type="search"
+              />
+              <!-- 清除按钮 - Requirements: 4.5 -->
+              <view class="search-clear-btn" wx:if="{{searchInputValue}}" bindtap="clearSearch">
+                <text class="clear-icon">×</text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 筛选按钮 - Requirements: 1.1 -->
+          <view class="filter-btn {{showFilterPanel ? 'active' : ''}} {{hasActiveFilters ? 'has-filters' : ''}}" bindtap="toggleFilterPanel">
+            <text class="filter-btn-text">筛选</text>
+            <view class="filter-indicator" wx:if="{{hasActiveFilters && !showFilterPanel}}"></view>
+          </view>
+          
+          <!-- 排序选择器 - Requirements: 7.1, 7.2, 7.7 -->
+          <view class="sort-selector">
+            <view class="sort-btn {{showSortDropdown ? 'active' : ''}} {{sortOption !== 'default' ? 'has-sort' : ''}}" bindtap="toggleSortDropdown">
+              <text class="sort-btn-text">{{sortOptions[sortOption === 'default' ? 0 : (sortOption === 'newest' ? 1 : (sortOption === 'priceAsc' ? 2 : 3))].label}}</text>
+              <text class="sort-btn-arrow {{showSortDropdown ? 'up' : ''}}">▼</text>
+            </view>
+            <!-- 排序下拉菜单 -->
+            <view class="sort-dropdown {{showSortDropdown ? 'show' : ''}}">
+              <view 
+                class="sort-option {{sortOption === item.value ? 'selected' : ''}}"
+                wx:for="{{sortOptions}}"
+                wx:key="value"
+                bindtap="selectSortOption"
+                data-value="{{item.value}}"
+              >
+                <text>{{item.label}}</text>
+                <text class="sort-check" wx:if="{{sortOption === item.value}}">✓</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 排序下拉菜单遮罩 -->
+        <view class="sort-dropdown-mask" wx:if="{{showSortDropdown}}" bindtap="toggleSortDropdown"></view>
+        
+        <!-- 筛选面板 - Requirements: 1.1, 1.4, 1.5, 2.1, 3.1 -->
+        <view class="filter-panel {{showFilterPanel ? 'show' : ''}}">
+          <!-- 长度筛选 - Requirements: 1.4, 2.1 -->
+          <view class="filter-section">
+            <view class="filter-section-title">长度</view>
+            <view class="filter-options filter-options-wrap">
+              <view 
+                class="filter-option {{lengthFilter && lengthFilter.label === item.label ? 'selected' : ''}} {{item.min === null ? 'option-unlimited' : ''}}"
+                wx:for="{{lengthOptions}}"
+                wx:key="label"
+                bindtap="selectLengthFilter"
+                data-index="{{index}}"
+              >
+                <text>{{item.label}}</text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 宽度筛选 - Requirements: 1.5, 3.1 -->
+          <view class="filter-section">
+            <view class="filter-section-title">平均宽度</view>
+            <view class="filter-options filter-options-wrap">
+              <view 
+                class="filter-option {{widthFilter && widthFilter.label === item.label ? 'selected' : ''}} {{item.min === null ? 'option-unlimited' : ''}}"
+                wx:for="{{widthOptions}}"
+                wx:key="label"
+                bindtap="selectWidthFilter"
+                data-index="{{index}}"
+              >
+                <text>{{item.label}}</text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 清除所有筛选按钮 - Requirements: 5.3 -->
+          <view class="filter-actions">
+            <view class="clear-all-btn" bindtap="clearAllFilters" wx:if="{{hasActiveFilters}}">
+              <text>清除所有筛选</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 激活的筛选指示器 - Requirements: 5.2 -->
+        <view class="active-filters-bar" wx:if="{{hasActiveFilters && !showFilterPanel}}">
+          <view class="active-filter-tag" wx:if="{{searchKeyword}}">
+            <text>搜索: {{searchKeyword}}</text>
+            <text class="tag-close" catchtap="clearSearch">×</text>
+          </view>
+          <view class="active-filter-tag" wx:if="{{lengthFilter}}">
+            <text>长度: {{lengthFilter.label}}</text>
+            <text class="tag-close" catchtap="clearLengthFilter">×</text>
+          </view>
+          <view class="active-filter-tag" wx:if="{{widthFilter}}">
+            <text>宽度: {{widthFilter.label}}</text>
+            <text class="tag-close" catchtap="clearWidthFilter">×</text>
+          </view>
+        </view>
+        
         <!-- 当前分类信息 -->
         <view class="current-category" wx:if="{{categories[activeTab]}}">
           <view class="current-category-name">{{categories[activeTab].name}}</view>
-          <view class="current-category-desc">{{categories[activeTab].description}}</view>
-          <view class="product-count">共 {{totalProducts}} 件产品</view>
+          <view class="current-category-row">
+            <view class="current-category-desc" wx:if="{{categories[activeTab].description}}">{{categories[activeTab].description}}</view>
+            <view class="product-count">共 {{filteredProducts.length > 0 || hasActiveFilters ? filteredProducts.length : totalProducts}} 件产品</view>
+          </view>
+        </view>
+        
+        <!-- 案例入口按钮 - 仅在树脂定制款分类显示 - Requirements: 1.1, 1.2, 1.3, 1.5 -->
+        <view class="case-entry" 
+              wx:if="{{categories[activeTab] && categories[activeTab]._id === 'cat_custom'}}"
+              bindtap="navigateToCases">
+          <view class="case-entry-text">查看更多定制案例</view>
+          <view class="case-entry-arrow">→</view>
         </view>
         
         <!-- 加载状态 -->
@@ -77,10 +198,10 @@
                      enable-back-to-top="{{true}}"
                      bindscrolltolower="onScrollToLower"
                      lower-threshold="100"
-                     wx:if="{{!loading && products.length > 0}}">
+                     wx:if="{{!loading && (hasActiveFilters ? filteredProducts.length > 0 : products.length > 0)}}">
           <view class="product-grid">
             <view class="product-item" 
-                  wx:for="{{products}}" 
+                  wx:for="{{hasActiveFilters ? filteredProducts : products}}" 
                   wx:key="_id" 
                   bindtap="navigateToDetail" 
                   data-id="{{item._id}}">
@@ -118,8 +239,18 @@
         </scroll-view>
         
         <!-- 空状态 -->
-        <view class="empty-state" wx:if="{{!loading && products.length === 0}}">
+        <view class="empty-state" wx:if="{{!loading && !hasActiveFilters && products.length === 0}}">
           <text>暂无产品</text>
+        </view>
+        
+        <!-- 筛选空状态 - Requirements: 6.1, 6.2, 6.3 -->
+        <view class="filter-empty-state" wx:if="{{!loading && hasActiveFilters && filteredProducts.length === 0}}">
+          <view class="filter-empty-icon">🔍</view>
+          <text class="filter-empty-text">没有找到符合条件的产品</text>
+          <text class="filter-empty-hint">请尝试调整筛选条件或清除筛选</text>
+          <view class="filter-empty-action" bindtap="clearAllFilters">
+            <text>清除所有筛选</text>
+          </view>
         </view>
       </view>
     </view>

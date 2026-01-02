@@ -10,6 +10,8 @@
     "pages/admin-product/admin-product",
     "pages/category-form/category-form",
     "pages/product-form/product-form",
+    "pages/new-products/new-products",
+    "pages/customer-cases/customer-cases",
     "pages/migration-test/migration-test",
     "pages/video-migration/video-migration",
     "pages/cloud-video-test/cloud-video-test",
@@ -33,7 +35,7 @@
     "color": "#8B5A2B",
     "selectedColor": "#4D3926",
     "backgroundColor": "#F5F5DC",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
@@ -69,7 +71,8 @@
       "defaultContentBox": true,
       "disableABTest": true,
       "sdkVersionBegin": "3.0.0",
-      "sdkVersionEnd": "15.255.255"
+      "sdkVersionEnd": "15.255.255",
+      "disableSafeArea": true
     }
   },
   "componentFramework": "glass-easel",

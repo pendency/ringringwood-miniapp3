@@ -185,6 +185,21 @@
 5. WHEN 管理员上传轮播图 THEN Admin_System SHALL 创建轮播图记录并保存到数据库
 6. THE Cloud_Storage SHALL 自动生成临时访问URL用于图片显示
 
+### 需求 18：产品视频上传管理
+
+**用户故事：** 作为管理员，我希望为产品上传视频，以便更好地展示产品特点和使用场景。
+
+#### 验收标准
+
+1. WHEN 管理员在产品编辑页面点击上传视频按钮 THEN Admin_System SHALL 打开视频选择器
+2. WHEN 管理员选择视频文件 THEN Admin_System SHALL 将视频上传到云存储
+3. THE Admin_System SHALL 限制视频时长最长为60秒
+4. WHEN 视频上传成功 THEN Admin_System SHALL 显示视频预览
+5. WHEN 管理员点击删除视频按钮 THEN Admin_System SHALL 显示确认对话框
+6. WHEN 管理员确认删除视频 THEN Admin_System SHALL 移除视频引用
+7. THE 视频命名格式 SHALL 遵循 `products/videos/{category}/{productId}_video.mp4` 规范
+8. WHEN 产品保存成功 THEN Product_Admin SHALL 将视频URL保存到数据库的 `videoUrl` 字段
+
 ### 需求 13：数据迁移
 
 **用户故事：** 作为管理员，我希望将本地数据迁移到云数据库，以便实现数据云端化。

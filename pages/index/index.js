@@ -51,6 +51,17 @@ Page({
   // 🆕 页面显示时刷新分类数据，确保侧边栏显示最新的分类名称和排序
   onShow: function() {
     console.log('[Index] onShow 触发，刷新分类数据');
+    
+    // 重置可能遮挡页面的弹窗状态
+    if (this.data.showMenu) {
+      console.log('[Index] 检测到侧边菜单未关闭，重置中...');
+      this.setData({ showMenu: false });
+    }
+    if (this.data.showGestureInput) {
+      console.log('[Index] 检测到手势输入弹窗未关闭，重置中...');
+      this.setData({ showGestureInput: false, adminGestureSequence: [], gestureConfig: null });
+    }
+    
     this.refreshCategories();
   },
 
@@ -234,38 +245,14 @@ Page({
     const banner = e.currentTarget.dataset;
     const categoryName = banner.category;
     const linkType = banner.linktype;
-    const linkValue = banner.linkvalue;
     const productId = banner.productid;
+    const categoryId = banner.categoryid;
     
-    console.log('轮播图点击，数据:', { categoryName, linkType, linkValue, productId });
+    console.log('轮播图点击，数据:', { categoryName, linkType, productId, categoryId });
     
-    // 优先使用 linkType/linkValue 进行导航
-    if (linkType && linkValue) {
-      if (linkType === 'product') {
-        // 跳转到产品详情页
-        wx.navigateTo({
-          url: '/pages/product-detail/product-detail?id=' + linkValue,
-          success: function() {
-            console.log('轮播图成功跳转到产品详情页，ID:', linkValue);
-          },
-          fail: function(error) {
-            console.error('轮播图跳转到产品详情页失败:', error);
-            wx.showToast({
-              title: '跳转失败',
-              icon: 'none'
-            });
-          }
-        });
-        return;
-      } else if (linkType === 'category') {
-        // 跳转到分类页
-        this._navigateToCategory(linkValue);
-        return;
-      }
-    }
-    
-    // 如果有 productId，跳转到产品详情页
-    if (productId) {
+    // 根据 linkType 进行导航
+    if (linkType === 'product' && productId) {
+      // 跳转到产品详情页
       wx.navigateTo({
         url: '/pages/product-detail/product-detail?id=' + productId,
         success: function() {
@@ -273,14 +260,28 @@ Page({
         },
         fail: function(error) {
           console.error('轮播图跳转到产品详情页失败:', error);
+          wx.showToast({
+            title: '跳转失败',
+            icon: 'none'
+          });
         }
       });
       return;
+    } else if (linkType === 'category' && categoryId) {
+      // 跳转到分类页 - 使用分类ID
+      this._navigateToCategoryById(categoryId);
+      return;
     }
     
-    // 回退：使用分类名称导航
+    // 如果 linkType 为 none 或未设置，不做任何跳转
+    if (linkType === 'none') {
+      console.log('轮播图设置为无跳转');
+      return;
+    }
+    
+    // 回退：使用分类名称导航（兼容旧数据）
     if (!categoryName) {
-      console.error('轮播图点击，但没有有效的导航数据');
+      console.log('轮播图点击，但没有有效的导航数据');
       return;
     }
 
@@ -289,6 +290,21 @@ Page({
     console.log('清理后的分类名称:', cleanCategoryName);
     
     this._navigateToCategory(cleanCategoryName);
+  },
+  
+  // 内部方法：通过分类ID导航到分类页
+  _navigateToCategoryById: function(categoryId) {
+    // 从分类列表中查找分类名称
+    const category = this.data.categories.find(c => c._id === categoryId);
+    if (category) {
+      this._navigateToCategory(category.name);
+    } else {
+      console.error('未找到分类ID对应的分类:', categoryId);
+      wx.showToast({
+        title: '分类不存在',
+        icon: 'none'
+      });
+    }
   },
   
   // 内部方法：导航到分类页
@@ -321,15 +337,16 @@ Page({
     });
   },
   
-  // 跳转到新品列表页
+  // 跳转到分类页（灵感上新查看更多）
   navigateToNewProducts: function() {
-    wx.navigateTo({
-      url: '/pages/new-products/new-products',
+    // 直接跳转到分类页
+    wx.switchTab({
+      url: '/pages/category/category',
       success: function() {
-        console.log('成功跳转到新品列表页');
+        console.log('成功跳转到分类页');
       },
       fail: function(error) {
-        console.error('跳转到新品列表页失败:', error);
+        console.error('跳转到分类页失败:', error);
         wx.showToast({
           title: '跳转失败',
           icon: 'none'

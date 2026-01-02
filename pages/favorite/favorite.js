@@ -29,6 +29,16 @@ Page({
   },
   
   onShow: function() {
+    // 重置可能遮挡页面的弹窗状态
+    if (this.data.showMenu) {
+      console.log('[Favorite] 检测到侧边菜单未关闭，重置中...');
+      this.setData({ showMenu: false });
+    }
+    if (this.data.showQRCode) {
+      console.log('[Favorite] 检测到二维码弹窗未关闭，重置中...');
+      this.setData({ showQRCode: false });
+    }
+    
     // 每次显示页面时，重新加载收藏数据
     this.loadFavorites();
     // 🆕 刷新分类数据（用于侧边栏）

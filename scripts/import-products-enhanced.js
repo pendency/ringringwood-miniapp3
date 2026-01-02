@@ -1,6 +1,6 @@
 // scripts/import-products-enhanced.js
 // 增强版产品数据导入脚本
-// 作用：使用新的数据处理器修复所有已知问题
+// 注意：数据库是唯一数据源，此脚本仅用于生成JSON文件供参考
 
 const fs = require('fs');
 const path = require('path');

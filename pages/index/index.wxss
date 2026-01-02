@@ -2,22 +2,25 @@
 page {
   height: 100%;
   background-color: #F5F5DC;
-  overflow-y: auto;
 }
 
 .container {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   background-color: #F5F5DC;
   position: relative;
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .content-container {
+  flex: 1;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
-  padding: 0 10rpx 120rpx;
-  overflow: visible;
+  padding: 0 20rpx;
+  padding-bottom: 20rpx;
 }
 
 /* 侧边菜单 */
@@ -31,12 +34,13 @@ page {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s;
-  overflow: hidden;
+  /* 只在菜单显示时阻止滚动 */
 }
 
 .side-menu.show {
   pointer-events: auto;
   opacity: 1;
+  overflow: hidden; /* 只在菜单打开时禁止滚动 */
 }
 
 .menu-mask {
@@ -181,6 +185,8 @@ page {
   background-color: #fff;
   border-radius: 16rpx;
   padding: 30rpx;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 产品分类区域特殊样式 */
@@ -206,23 +212,35 @@ page {
   color: #8B5A2B;
 }
 
-/* 产品列表 */
+/* 产品列表 - 精选产品 (两列布局) */
 .product-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .product-item {
+  width: 48%;
+  margin-bottom: 20rpx;
   background-color: #fff;
   border-radius: 12rpx;
   overflow: hidden;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+/* 精选产品图片容器 - 固定高度 */
+.product-image-container {
+  width: 100%;
+  height: 320rpx;
+  overflow: hidden;
+  background-color: #f5f5f5;
 }
 
 .product-image {
   width: 100%;
-  height: 300rpx;
+  height: 100%;
 }
 
 .product-info {
@@ -352,12 +370,13 @@ page {
 /* 页脚品牌标语 */
 .footer-slogan {
   text-align: center;
-  font-size: 26rpx; /* 略小于产品标题的字号 */
-  color: rgba(139, 90, 43, 0.65); /* 淡棕色带透明度 */
-  padding: 60rpx 40rpx 40rpx; /* 上右下左内边距 */
-  letter-spacing: 1rpx; /* 字间距 */
-  line-height: 1.6; /* 行高 */
-  font-style: normal; /* 正常字体样式 */
+  font-size: 26rpx;
+  color: rgba(139, 90, 43, 0.65);
+  padding: 60rpx 40rpx;
+  padding-bottom: 160rpx; /* 为tabBar留出空间 */
+  letter-spacing: 1rpx;
+  line-height: 1.6;
+  font-style: normal;
 }
 
 

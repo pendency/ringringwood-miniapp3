@@ -26,6 +26,7 @@ Page({
       categoryId: '',
       imageUrls: [],
       images: [],
+      videoUrl: '', // 产品视频URL
       features: [],
       params: [],
       isHot: false,
@@ -198,6 +199,7 @@ Page({
             categoryId: formCategoryId,
             imageUrls: product.imageUrls || [],
             images: product.images || [],
+            videoUrl: product.videoUrl || '', // 加载产品视频
             features: product.features || [],
             params: product.params || [],
             isHot: product.isHot || false,
@@ -386,7 +388,11 @@ Page({
         .get();
 
       const folder = this._getCategoryFolder(categoryId);
-      const pattern = new RegExp(`${folder}/${folder}(\\d+)\\.jpeg`, 'i');
+      // 🆕 支持新旧两种命名格式
+      // 新格式: {folder}{number}_cover.jpeg
+      // 旧格式: {folder}{number}.jpeg
+      const newPattern = new RegExp(`${folder}/(${folder})(\\d+)_cover`, 'i');
+      const oldPattern = new RegExp(`${folder}/${folder}(\\d+)\\.jpeg`, 'i');
       
       let maxNumber = 0;
       
@@ -395,20 +401,34 @@ Page({
         if (product.imageUrls && Array.isArray(product.imageUrls)) {
           product.imageUrls.forEach(url => {
             if (url) {
-              const match = url.match(pattern);
+              // 先尝试新格式
+              let match = url.match(newPattern);
               if (match) {
-                const num = parseInt(match[1], 10);
+                const num = parseInt(match[2], 10);
                 if (num > maxNumber) maxNumber = num;
+              } else {
+                // 再尝试旧格式
+                match = url.match(oldPattern);
+                if (match) {
+                  const num = parseInt(match[1], 10);
+                  if (num > maxNumber) maxNumber = num;
+                }
               }
             }
           });
         }
         // 检查 imageUrl1 字段
         if (product.imageUrl1) {
-          const match = product.imageUrl1.match(pattern);
+          let match = product.imageUrl1.match(newPattern);
           if (match) {
-            const num = parseInt(match[1], 10);
+            const num = parseInt(match[2], 10);
             if (num > maxNumber) maxNumber = num;
+          } else {
+            match = product.imageUrl1.match(oldPattern);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNumber) maxNumber = num;
+            }
           }
         }
       });
@@ -458,13 +478,14 @@ Page({
           this._currentCategoryFolder = folder;
 
           const uploadPromises = res.tempFiles.map(async (file, index) => {
-            // 主图命名格式: products/images/{category}/{category}{number}.jpeg
-            // 如果有多张主图，第二张开始加后缀 -m2, -m3 等
+            // 🆕 主图命名格式: products/images/{category}/{productId}_cover.jpeg
+            // 如果有多张主图，第二张开始加后缀 _cover_2, _cover_3 等
+            const productId = `${folder}${nextNumber}`;
             let cloudPath;
             if (index === 0) {
-              cloudPath = `products/images/${folder}/${folder}${nextNumber}.jpeg`;
+              cloudPath = `products/images/${folder}/${productId}_cover.jpeg`;
             } else {
-              cloudPath = `products/images/${folder}/${folder}${nextNumber}-m${index + 1}.jpeg`;
+              cloudPath = `products/images/${folder}/${productId}_cover_${index + 1}.jpeg`;
             }
             
             const uploadResult = await wx.cloud.uploadFile({
@@ -482,8 +503,18 @@ Page({
           wx.showToast({ title: '上传成功', icon: 'success' });
         } catch (error) {
           wx.hideLoading();
-          console.error('上传图片失败:', error);
-          wx.showToast({ title: '上传失败', icon: 'none' });
+          console.error('上传主图失败:', error);
+          console.error('错误详情:', JSON.stringify({
+            message: error.message,
+            errMsg: error.errMsg,
+            errCode: error.errCode
+          }));
+          // 提示用户可能的解决方案
+          wx.showModal({
+            title: '上传失败',
+            content: '可能原因：\n1. 网络连接问题\n2. 请检查云开发控制台存储权限\n3. 尝试重启开发者工具',
+            showCancel: false
+          });
         }
       }
     });
@@ -505,11 +536,11 @@ Page({
    */
   chooseDetailImages: function() {
     const currentCount = this.data.formData.images.length;
-    const maxCount = 10;
+    const maxCount = 25;
     const remainCount = maxCount - currentCount;
 
     if (remainCount <= 0) {
-      wx.showToast({ title: '最多上传10张详情图', icon: 'none' });
+      wx.showToast({ title: '最多上传25张详情图', icon: 'none' });
       return;
     }
 
@@ -527,17 +558,25 @@ Page({
         wx.showToast({ title: '请先上传主图', icon: 'none' });
         return;
       }
-      // 尝试从已有主图URL中提取编号
+      // 🆕 尝试从已有主图URL中提取编号（支持新旧两种命名格式）
       const existingUrl = this.data.formData.imageUrls[0];
       const folder = this._getCategoryFolder(categoryId);
-      const pattern = new RegExp(`${folder}/${folder}(\\d+)`);
-      const match = existingUrl.match(pattern);
+      // 新格式: {folder}{number}_cover.jpeg 或旧格式: {folder}{number}.jpeg
+      const newPattern = new RegExp(`${folder}/(${folder}(\\d+))_cover`);
+      const oldPattern = new RegExp(`${folder}/${folder}(\\d+)(?:\\.|_|-)`);
+      let match = existingUrl.match(newPattern);
       if (match) {
-        this._currentProductNumber = parseInt(match[1], 10);
+        this._currentProductNumber = parseInt(match[2], 10);
         this._currentCategoryFolder = folder;
       } else {
-        wx.showToast({ title: '请先上传主图', icon: 'none' });
-        return;
+        match = existingUrl.match(oldPattern);
+        if (match) {
+          this._currentProductNumber = parseInt(match[1], 10);
+          this._currentCategoryFolder = folder;
+        } else {
+          wx.showToast({ title: '请先上传主图', icon: 'none' });
+          return;
+        }
       }
     }
 
@@ -554,9 +593,10 @@ Page({
           const existingDetailCount = this.data.formData.images.length;
 
           const uploadPromises = res.tempFiles.map(async (file, index) => {
-            // 详情图命名格式: products/images/{category}/{category}{number}-{detailIndex}.jpeg
+            // 🆕 详情图命名格式: products/images/{category}/{productId}_detail_{number}.jpeg
+            const productId = `${folder}${productNumber}`;
             const detailIndex = existingDetailCount + index + 1;
-            const cloudPath = `products/images/${folder}/${folder}${productNumber}-${detailIndex}.jpeg`;
+            const cloudPath = `products/images/${folder}/${productId}_detail_${detailIndex}.jpeg`;
             
             const uploadResult = await wx.cloud.uploadFile({
               cloudPath,
@@ -573,8 +613,17 @@ Page({
           wx.showToast({ title: '上传成功', icon: 'success' });
         } catch (error) {
           wx.hideLoading();
-          console.error('上传图片失败:', error);
-          wx.showToast({ title: '上传失败', icon: 'none' });
+          console.error('上传详情图失败:', error);
+          console.error('错误详情:', JSON.stringify({
+            message: error.message,
+            errMsg: error.errMsg,
+            errCode: error.errCode
+          }));
+          wx.showModal({
+            title: '上传失败',
+            content: '可能原因：\n1. 网络连接问题\n2. 请检查云开发控制台存储权限\n3. 尝试重启开发者工具',
+            showCancel: false
+          });
         }
       }
     });
@@ -588,6 +637,95 @@ Page({
     const images = [...this.data.formData.images];
     images.splice(index, 1);
     this.setData({ 'formData.images': images });
+  },
+
+  /**
+   * 选择产品视频
+   * 视频命名格式: products/videos/{category}/{productId}_video.mp4
+   */
+  chooseVideo: function() {
+    // 检查是否已选择分类
+    const categoryId = this.data.formData.categoryId;
+    if (!categoryId) {
+      wx.showToast({ title: '请先选择产品分类', icon: 'none' });
+      return;
+    }
+
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['video'],
+      sourceType: ['album', 'camera'],
+      maxDuration: 60, // 最长60秒
+      success: async (res) => {
+        wx.showLoading({ title: '上传中...', mask: true });
+
+        try {
+          const folder = this._getCategoryFolder(categoryId);
+          
+          // 获取产品编号（如果已有主图则从主图提取，否则获取新编号）
+          let productNumber = this._currentProductNumber;
+          if (!productNumber) {
+            if (this.data.formData.imageUrls.length > 0) {
+              // 从已有主图URL中提取编号
+              const existingUrl = this.data.formData.imageUrls[0];
+              const newPattern = new RegExp(`${folder}/(${folder}(\\d+))_cover`);
+              const oldPattern = new RegExp(`${folder}/${folder}(\\d+)(?:\\.|_|-)`);
+              let match = existingUrl.match(newPattern);
+              if (match) {
+                productNumber = parseInt(match[2], 10);
+              } else {
+                match = existingUrl.match(oldPattern);
+                if (match) {
+                  productNumber = parseInt(match[1], 10);
+                }
+              }
+            }
+            if (!productNumber) {
+              productNumber = await this._getNextProductNumber(categoryId);
+            }
+            this._currentProductNumber = productNumber;
+            this._currentCategoryFolder = folder;
+          }
+
+          const videoFile = res.tempFiles[0];
+          // 视频命名格式: products/videos/{category}/{productId}_video.mp4
+          const productId = `${folder}${productNumber}`;
+          const cloudPath = `products/videos/${folder}/${productId}_video.mp4`;
+
+          const uploadResult = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath: videoFile.tempFilePath
+          });
+
+          this.setData({ 'formData.videoUrl': uploadResult.fileID });
+          wx.hideLoading();
+          wx.showToast({ title: '上传成功', icon: 'success' });
+        } catch (error) {
+          wx.hideLoading();
+          console.error('上传视频失败:', error);
+          wx.showModal({
+            title: '上传失败',
+            content: '可能原因：\n1. 网络连接问题\n2. 视频文件过大\n3. 请检查云开发控制台存储权限',
+            showCancel: false
+          });
+        }
+      }
+    });
+  },
+
+  /**
+   * 移除产品视频
+   */
+  removeVideo: function() {
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除此视频吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({ 'formData.videoUrl': '' });
+        }
+      }
+    });
   },
 
   /**

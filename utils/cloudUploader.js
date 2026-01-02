@@ -82,19 +82,35 @@ async function uploadBannerImage(imagePath, bannerId) {
  * 上传分类图片到云存储
  * @param {string} imagePath - 图片路径
  * @param {string} categoryId - 分类ID
+ * @param {string} type - 图片类型: 'icon' 或 'image'
  * @returns {Promise<string>} 上传后的云存储URL
+ * 
+ * 存储路径规范:
+ * - icon: categories/{categoryId}/{categoryId}_icon.jpg
+ * - image: categories/{categoryId}/{categoryId}.jpg
  */
-async function uploadCategoryImage(imagePath, categoryId) {
-  console.log('开始上传分类图片:', imagePath, categoryId);
+async function uploadCategoryImage(imagePath, categoryId, type = 'image') {
+  console.log('开始上传分类图片:', imagePath, categoryId, type);
   
   if (!imagePath || imagePath.trim() === '') {
     throw new Error('图片路径不能为空');
   }
 
+  if (!categoryId || categoryId.trim() === '') {
+    throw new Error('分类ID不能为空');
+  }
+
   try {
+    // 统一使用 jpg 格式，保持命名一致性
+    const fileExtension = 'jpg';
+    
     // 生成云存储文件名
-    const fileExtension = imagePath.split('.').pop() || 'jpg';
-    const cloudPath = `categories/${categoryId || Date.now()}.${fileExtension}`;
+    // icon: categories/{categoryId}/{categoryId}_icon.jpg
+    // image: categories/{categoryId}/{categoryId}.jpg
+    const fileName = type === 'icon' 
+      ? `${categoryId}_icon.${fileExtension}`
+      : `${categoryId}.${fileExtension}`;
+    const cloudPath = `categories/${categoryId}/${fileName}`;
 
     console.log('上传分类图片到:', cloudPath);
 
@@ -312,9 +328,91 @@ export async function chooseAndUploadImages(options = {}) {
   }
 }
 
+/**
+ * 上传案例图片到云存储
+ * @param {string} tempFilePath - 临时文件路径
+ * @param {string} caseId - 案例ID (格式: custom{number})
+ * @returns {Promise<string>} 云存储文件ID
+ * 
+ * 存储路径规范:
+ * - 路径: cases/custom/custom{number}.{ext}
+ * - 支持格式: jpg, jpeg, png
+ * - 最大文件大小: 2MB
+ */
+async function uploadCaseImage(tempFilePath, caseId) {
+  console.log('开始上传案例图片:', tempFilePath, caseId);
+  
+  if (!tempFilePath || tempFilePath.trim() === '') {
+    throw new Error('图片路径不能为空');
+  }
+
+  if (!caseId || caseId.trim() === '') {
+    throw new Error('案例ID不能为空');
+  }
+
+  // 验证案例ID格式
+  const caseIdPattern = /^custom\d+$/;
+  if (!caseIdPattern.test(caseId)) {
+    throw new Error('案例ID格式无效，应为 custom{number} 格式');
+  }
+
+  try {
+    // 获取原始文件扩展名并保留
+    const pathParts = tempFilePath.split('.');
+    const originalExtension = pathParts.length > 1 ? pathParts.pop().toLowerCase() : 'jpg';
+    
+    // 验证文件扩展名
+    const allowedExtensions = ['jpg', 'jpeg', 'png'];
+    const fileExtension = allowedExtensions.includes(originalExtension) ? originalExtension : 'jpg';
+    
+    // 生成云存储文件路径: cases/custom/custom{number}.{ext}
+    const cloudPath = `cases/custom/${caseId}.${fileExtension}`;
+
+    console.log('上传案例图片到:', cloudPath);
+
+    const result = await wx.cloud.uploadFile({
+      cloudPath: cloudPath,
+      filePath: tempFilePath
+    });
+
+    console.log('案例图片上传成功:', result.fileID);
+    return result.fileID;
+  } catch (error) {
+    console.error('案例图片上传失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 生成案例图片的云存储路径
+ * @param {string} caseId - 案例ID (格式: custom{number})
+ * @param {string} extension - 文件扩展名 (jpg, jpeg, png)
+ * @returns {string} 云存储路径
+ */
+function generateCaseImagePath(caseId, extension = 'jpg') {
+  if (!caseId || caseId.trim() === '') {
+    throw new Error('案例ID不能为空');
+  }
+  
+  // 验证案例ID格式
+  const caseIdPattern = /^custom\d+$/;
+  if (!caseIdPattern.test(caseId)) {
+    throw new Error('案例ID格式无效，应为 custom{number} 格式');
+  }
+  
+  // 验证并规范化扩展名
+  const allowedExtensions = ['jpg', 'jpeg', 'png'];
+  const normalizedExt = extension.toLowerCase();
+  const finalExtension = allowedExtensions.includes(normalizedExt) ? normalizedExt : 'jpg';
+  
+  return `cases/custom/${caseId}.${finalExtension}`;
+}
+
 // 导出函数
 module.exports = {
   uploadProductImages,
   uploadBannerImage,
-  uploadCategoryImage
+  uploadCategoryImage,
+  uploadCaseImage,
+  generateCaseImagePath
 };

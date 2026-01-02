@@ -12,7 +12,8 @@ Page({
     contactWechat: '15794781359', // 在这里修改微信号
     contactAddress: '江西省赣州市南康区', // 在这里修改实体店地址
     contactEmail: '18370889142@163.com', // 在这里修改电子邮箱
-    businessHours: '周一至周日 9:00-18:00' // 营业时间
+    businessHours: '周一至周日 9:00-18:00', // 营业时间
+    qrcodeUrl: '' // 二维码临时URL
   },
   
   onLoad: function() {
@@ -31,10 +32,92 @@ Page({
     
     // 🆕 加载分类数据
     this.loadCategories();
+    
+    // 🆕 加载二维码临时URL
+    this.loadQRCodeUrl();
+  },
+
+  // 🆕 加载二维码临时URL
+  async loadQRCodeUrl() {
+    const cloudFileId = 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpg';
+    
+    try {
+      const result = await wx.cloud.getTempFileURL({
+        fileList: [cloudFileId]
+      });
+      
+      if (result.fileList && result.fileList.length > 0 && result.fileList[0].tempFileURL) {
+        this.setData({
+          qrcodeUrl: result.fileList[0].tempFileURL
+        });
+        console.log('二维码临时URL获取成功:', result.fileList[0].tempFileURL);
+      } else {
+        throw new Error('临时URL为空');
+      }
+    } catch (error) {
+      console.error('获取二维码临时URL失败:', error);
+      // 失败时使用原始云存储地址
+      this.setData({
+        qrcodeUrl: cloudFileId
+      });
+    }
+  },
+
+  // 🆕 预览二维码（支持长按识别）
+  async previewQRCode() {
+    let url = this.data.qrcodeUrl;
+    
+    // 如果URL为空或是云存储地址，先获取临时URL
+    if (!url || url.startsWith('cloud://')) {
+      try {
+        wx.showLoading({ title: '加载中...' });
+        const cloudFileId = 'cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/ui/brand/qrcode小.jpg';
+        const result = await wx.cloud.getTempFileURL({
+          fileList: [cloudFileId]
+        });
+        wx.hideLoading();
+        
+        if (result.fileList && result.fileList.length > 0 && result.fileList[0].tempFileURL) {
+          url = result.fileList[0].tempFileURL;
+          this.setData({ qrcodeUrl: url });
+        } else {
+          throw new Error('获取临时URL失败');
+        }
+      } catch (error) {
+        wx.hideLoading();
+        console.error('获取临时URL失败:', error);
+        wx.showToast({
+          title: '图片加载失败，请重试',
+          icon: 'none'
+        });
+        return;
+      }
+    }
+    
+    wx.previewImage({
+      current: url,
+      urls: [url],
+      success: () => {
+        console.log('预览二维码成功，可长按识别');
+      },
+      fail: (err) => {
+        console.error('预览二维码失败:', err);
+        wx.showToast({
+          title: '预览失败，请重试',
+          icon: 'none'
+        });
+      }
+    });
   },
 
   // 🆕 页面显示时刷新分类数据
   onShow: function() {
+    // 重置可能遮挡页面的弹窗状态
+    if (this.data.showMenu) {
+      console.log('[Contact] 检测到侧边菜单未关闭，重置中...');
+      this.setData({ showMenu: false });
+    }
+    
     this.loadCategories();
   },
 

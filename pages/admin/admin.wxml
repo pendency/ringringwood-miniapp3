@@ -1,4 +1,5 @@
 <!-- admin.wxml -->
+<page-meta root-font-size="system" page-style="overflow: hidden;" />
 <view class="container">
   <!-- 调试信息区域 - 仅在开发时显示，可通过 showDebug 控制 -->
   <view class="debug-info" wx:if="{{showDebug}}">
@@ -13,7 +14,7 @@
   <navigation-bar title="管理后台" showBack="{{true}}" bindback="navigateBack" />
   
   <!-- 内容区域 -->
-  <view class="content-container" style="padding-top: {{contentPaddingTop}}px;">
+  <scroll-view class="content-container" style="height: calc(100vh - {{contentPaddingTop}}px); margin-top: {{contentPaddingTop}}px;" scroll-y="true" enhanced="{{true}}" show-scrollbar="{{true}}" bounces="{{false}}">
     <!-- 标签页导航 -->
     <view class="tabs">
       <view class="tab {{activeTab === 'products' ? 'active' : ''}}" 
@@ -25,12 +26,9 @@
       <view class="tab {{activeTab === 'banners' ? 'active' : ''}}" 
             bindtap="switchTab" 
             data-tab="banners">轮播图管理</view>
-      <view class="tab {{activeTab === 'migration' ? 'active' : ''}}" 
+      <view class="tab {{activeTab === 'cases' ? 'active' : ''}}" 
             bindtap="switchTab" 
-            data-tab="migration">数据迁移</view>
-      <view class="tab {{activeTab === 'tools' ? 'active' : ''}}" 
-            bindtap="switchTab" 
-            data-tab="tools">工具</view>
+            data-tab="cases">案例管理</view>
     </view>
     
     <!-- 加载中提示 -->
@@ -99,40 +97,6 @@
           <button class="btn btn-error" bindtap="viewImportErrors" wx:if="{{importErrorsExist}}">查看错误</button>
         </view>
       </view>
-      
-      <!-- 数据迁移 -->
-      <view class="migration-section">
-        <view class="import-title">数据迁移到云开发</view>
-        <view class="import-desc">将本地mock数据迁移到云开发数据库</view>
-        
-        <view class="import-status" wx:if="{{migrationStatus}}">
-          <text class="{{migrationSuccess ? 'success' : 'error'}}">{{migrationStatus}}</text>
-        </view>
-        
-        <view class="action-buttons">
-          <button class="btn btn-primary" bindtap="testCloudFunction">测试云函数连接</button>
-          <button class="btn btn-warning" bindtap="executeMigration" disabled="{{migrationRunning}}">
-            {{migrationRunning ? '迁移中...' : '执行数据迁移'}}
-          </button>
-        </view>
-      </view>
-      
-      <view class="divider"></view>
-      
-      <view class="product-list">
-        <block wx:for="{{products}}" wx:key="_id">
-          <view class="product-item {{currentProduct._id === item._id ? 'selected' : ''}}" 
-                bindtap="selectProduct" 
-                data-id="{{item._id}}">
-            <view class="product-name">{{item.name}}</view>
-            <view class="product-desc">{{item.description}}</view>
-          </view>
-        </block>
-      </view>
-      
-      <view class="action-buttons">
-        <button class="btn" bindtap="chooseImage" data-type="product">上传产品图片</button>
-      </view>
     </view>
     
     <!-- 分类管理 -->
@@ -148,6 +112,99 @@
           </view>
           <view class="tool-actions">
             <button class="btn btn-primary" bindtap="goToCategoryAdmin">打开分类管理</button>
+          </view>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <!-- 分类图片上传区域 - Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 2.4, 5.1, 5.2, 5.3 -->
+      <view class="section-title">分类图片上传</view>
+      <view class="category-upload-section">
+        <!-- 分类选择器 - Requirements: 1.1, 1.2, 1.3, 1.4 -->
+        <view class="form-group">
+          <view class="form-label">选择分类</view>
+          <view wx:if="{{categories.length === 0}}" class="empty-category-tip">
+            <text>暂无分类，请先创建分类</text>
+          </view>
+          <picker wx:else 
+                  mode="selector" 
+                  range="{{categories}}" 
+                  range-key="name"
+                  bindchange="onCategorySelectChange">
+            <view class="picker-value">
+              <text>{{selectedCategoryForUpload ? selectedCategoryForUpload.name : '请选择分类'}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        
+        <!-- 当前分类预览区域 - Requirements: 5.2 -->
+        <view class="category-preview-section" wx:if="{{selectedCategoryForUpload}}">
+          <view class="form-label">当前分类预览</view>
+          <view class="category-preview-card">
+            <view class="category-preview-name">{{selectedCategoryForUpload.name}}</view>
+            <view class="category-preview-images">
+              <view class="preview-item">
+                <view class="preview-label">图标</view>
+                <view class="preview-image-box" wx:if="{{selectedCategoryForUpload.icon}}">
+                  <image class="preview-thumb" src="{{selectedCategoryForUpload.icon}}" mode="aspectFill"></image>
+                </view>
+                <view class="preview-empty" wx:else>
+                  <text>暂无图标</text>
+                </view>
+              </view>
+              <view class="preview-item">
+                <view class="preview-label">图片</view>
+                <view class="preview-image-box" wx:if="{{selectedCategoryForUpload.image}}">
+                  <image class="preview-thumb" src="{{selectedCategoryForUpload.image}}" mode="aspectFill"></image>
+                </view>
+                <view class="preview-empty" wx:else>
+                  <text>暂无图片</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 上传按钮区域 - Requirements: 2.3, 2.4, 5.3 -->
+        <view class="category-upload-buttons">
+          <button class="btn {{!selectedCategoryForUpload ? 'btn-disabled' : ''}}" 
+                  bindtap="chooseCategoryIconForUpload"
+                  disabled="{{!selectedCategoryForUpload || categoryUploading}}">
+            {{selectedCategoryForUpload && selectedCategoryForUpload.icon ? '更换图标' : '上传分类图标'}}
+          </button>
+          <button class="btn {{!selectedCategoryForUpload ? 'btn-disabled' : ''}}" 
+                  bindtap="chooseCategoryImageForUpload"
+                  disabled="{{!selectedCategoryForUpload || categoryUploading}}">
+            {{selectedCategoryForUpload && selectedCategoryForUpload.image ? '更换图片' : '上传分类图片'}}
+          </button>
+        </view>
+        
+        <!-- 未选择分类时的提示 - Requirements: 2.4 -->
+        <view class="upload-hint" wx:if="{{!selectedCategoryForUpload && categories.length > 0}}">
+          <text>请先选择一个分类，然后再上传图片</text>
+        </view>
+      </view>
+      
+      <!-- 图片预览和确认上传弹窗 - Requirements: 3.3, 4.1 -->
+      <view class="category-image-preview-modal" wx:if="{{categoryTempImage}}">
+        <view class="preview-modal-content">
+          <view class="preview-modal-header">
+            <text class="preview-modal-title">{{categoryUploadType === 'icon' ? '图标预览' : '图片预览'}}</text>
+          </view>
+          <view class="preview-modal-body">
+            <image class="preview-modal-image" src="{{categoryTempImage}}" mode="aspectFit"></image>
+            <view class="preview-modal-info">
+              <text>目标分类：{{selectedCategoryForUpload.name}}</text>
+              <text>上传类型：{{categoryUploadType === 'icon' ? '分类图标' : '分类图片'}}</text>
+            </view>
+          </view>
+          <view class="preview-modal-footer">
+            <button class="btn btn-cancel" bindtap="cancelCategoryImageUpload" disabled="{{categoryUploading}}">取消</button>
+            <button class="btn btn-primary" bindtap="confirmCategoryImageUpload" disabled="{{categoryUploading}}">
+              {{categoryUploading ? '上传中...' : '确认上传'}}
+            </button>
           </view>
         </view>
       </view>
@@ -228,10 +285,138 @@
         <button class="btn" bindtap="refreshBanners">刷新列表</button>
       </view>
     </view>
+
+    <!-- 案例管理 -->
+    <view class="tab-content" wx:if="{{activeTab === 'cases'}}">
+      <view class="section-title">案例管理</view>
+      
+      <!-- 新增案例 -->
+      <view class="tool-section">
+        <view class="tool-card">
+          <view class="tool-header">
+            <view class="tool-title">新增案例</view>
+            <view class="tool-desc">上传新的客户案例图片并设置标题和描述</view>
+          </view>
+          <view class="tool-actions">
+            <button class="btn btn-primary" bindtap="showAddCaseForm">新增案例</button>
+          </view>
+        </view>
+      </view>
+      
+      <view class="divider"></view>
+      
+      <!-- 案例列表 -->
+      <view class="section-title">案例列表</view>
+      
+      <view class="loading" wx:if="{{casesLoading}}">
+        <text>加载中...</text>
+      </view>
+      
+      <view class="case-list-container" wx:if="{{!casesLoading}}">
+        <view class="empty-tip" wx:if="{{cases.length === 0}}">
+          <text>暂无案例，请点击上方按钮添加</text>
+        </view>
+        
+        <view class="case-list">
+          <block wx:for="{{cases}}" wx:key="_id">
+            <view class="case-item">
+              <view class="case-preview">
+                <image class="case-image" src="{{item.imageUrl}}" mode="aspectFill" wx:if="{{item.imageUrl}}"></image>
+                <view class="case-no-image" wx:else>
+                  <text>暂无图片</text>
+                </view>
+                <view class="case-order">{{item.order || 999}}</view>
+                <view class="case-status {{item.status === 1 ? 'active' : 'inactive'}}">
+                  {{item.status === 1 ? '启用' : '禁用'}}
+                </view>
+              </view>
+              <view class="case-info">
+                <view class="case-title-text">{{item.title || '未设置标题'}}</view>
+                <view class="case-desc-text">{{item.description || '未设置描述'}}</view>
+              </view>
+              <view class="case-actions">
+                <button class="btn btn-small" bindtap="editCase" data-id="{{item._id}}">编辑</button>
+                <button class="btn btn-small btn-error" bindtap="deleteCase" data-id="{{item._id}}">删除</button>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+      
+      <view class="action-buttons">
+        <button class="btn" bindtap="refreshCases">刷新列表</button>
+      </view>
+    </view>
     
+    <!-- 案例编辑弹窗 -->
+    <view class="modal-overlay" wx:if="{{showCaseForm}}" catchtap="closeCaseForm">
+      <view class="modal-content case-form" catchtap="preventBubble">
+        <view class="modal-header">
+          <text class="modal-title">{{editingCaseId ? '编辑案例' : '新增案例'}}</text>
+          <view class="modal-close" bindtap="closeCaseForm">×</view>
+        </view>
+        
+        <scroll-view class="modal-body" scroll-y="true">
+          <view class="form-group">
+            <view class="form-label">案例图片</view>
+            <view class="case-image-upload" wx:if="{{!caseFormData.imageUrl && !caseFormData.imageTemp}}" bindtap="chooseCaseImage">
+              <text class="upload-icon">+</text>
+              <text class="upload-text">点击上传图片</text>
+            </view>
+            <view class="case-image-preview" wx:if="{{caseFormData.imageUrl || caseFormData.imageTemp}}">
+              <image src="{{caseFormData.imageTemp || caseFormData.imageUrl}}" mode="aspectFill"></image>
+              <view class="image-change" bindtap="chooseCaseImage">更换图片</view>
+            </view>
+          </view>
+          
+          <view class="form-group">
+            <view class="form-label">案例标题</view>
+            <input class="form-input" 
+                   placeholder="请输入案例标题" 
+                   value="{{caseFormData.title}}"
+                   bindinput="onCaseTitleInput" />
+          </view>
+          
+          <view class="form-group">
+            <view class="form-label">案例描述</view>
+            <textarea class="form-textarea" 
+                      placeholder="请输入案例描述" 
+                      value="{{caseFormData.description}}"
+                      bindinput="onCaseDescriptionInput" />
+          </view>
+          
+          <view class="form-group">
+            <view class="form-label">排序权重（数字越小越靠前）</view>
+            <input class="form-input" 
+                   type="number"
+                   placeholder="默认999" 
+                   value="{{caseFormData.order}}"
+                   bindinput="onCaseOrderInput" />
+          </view>
+          
+          <view class="form-group">
+            <view class="form-label">状态</view>
+            <view class="status-switch">
+              <switch checked="{{caseFormData.status === 1}}" 
+                      bindchange="onCaseStatusChange"
+                      color="#4CAF50" />
+              <text class="status-text">{{caseFormData.status === 1 ? '启用' : '禁用'}}</text>
+            </view>
+          </view>
+        </scroll-view>
+        
+        <view class="modal-actions">
+          <button class="btn btn-cancel" bindtap="closeCaseForm">取消</button>
+          <button class="btn btn-primary" bindtap="saveCase" disabled="{{caseSaving}}">
+            {{caseSaving ? '保存中...' : '保存'}}
+          </button>
+        </view>
+      </view>
+    </view>
+
     <!-- 轮播图编辑弹窗 -->
-    <view class="modal-overlay" wx:if="{{showBannerForm}}" bindtap="closeBannerForm">
-      <view class="modal-content banner-form" catchtap="">
+    <view class="modal-overlay" wx:if="{{showBannerForm}}" catchtap="closeBannerForm">
+      <view class="modal-content banner-form" catchtap="preventBubble">
         <view class="modal-header">
           <text class="modal-title">{{editingBannerId ? '编辑轮播图' : '新增轮播图'}}</text>
           <view class="modal-close" bindtap="closeBannerForm">×</view>
@@ -244,7 +429,7 @@
             <text class="upload-text">点击上传图片</text>
           </view>
           <view class="banner-image-preview" wx:if="{{bannerFormData.image}}">
-            <image src="{{bannerFormData.image}}" mode="aspectFill"></image>
+            <image src="{{bannerFormData.imageTemp || bannerFormData.image}}" mode="aspectFill"></image>
             <view class="image-change" bindtap="chooseBannerImage">更换图片</view>
           </view>
         </view>
@@ -285,11 +470,44 @@
         </view>
         
         <view class="form-group">
-          <view class="form-label">关联产品ID（可选）</view>
+          <view class="form-label">点击跳转类型</view>
+          <picker mode="selector" 
+                  range="{{bannerLinkTypes}}" 
+                  range-key="label"
+                  value="{{bannerFormData.linkType === 'none' ? 0 : (bannerFormData.linkType === 'product' ? 1 : 2)}}"
+                  bindchange="onBannerLinkTypeChange">
+            <view class="picker-value">
+              {{bannerFormData.linkType === 'none' ? '无跳转' : (bannerFormData.linkType === 'product' ? '跳转产品详情' : '跳转分类页面')}}
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        
+        <view class="form-group" wx:if="{{bannerFormData.linkType === 'product'}}">
+          <view class="form-label">关联产品ID</view>
           <input class="form-input" 
                  placeholder="点击轮播图跳转到的产品ID" 
                  value="{{bannerFormData.productId}}"
                  bindinput="onBannerProductIdInput" />
+        </view>
+        
+        <view class="form-group" wx:if="{{bannerFormData.linkType === 'category'}}">
+          <view class="form-label">关联分类</view>
+          <picker mode="selector" 
+                  range="{{categories}}" 
+                  range-key="name"
+                  bindchange="onBannerCategoryChange">
+            <view class="picker-value">
+              <block wx:for="{{categories}}" wx:key="_id">
+                <text wx:if="{{item._id === bannerFormData.categoryId}}">{{item.name}}</text>
+              </block>
+              <text wx:if="{{!bannerFormData.categoryId}}">请选择分类</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+          <view class="form-hint" wx:if="{{bannerFormData.categoryId}}">
+            已选择分类ID: {{bannerFormData.categoryId}}
+          </view>
         </view>
         
         <view class="modal-actions">
@@ -301,60 +519,6 @@
       </view>
     </view>
 
-    <!-- 数据迁移 -->
-    <view class="tab-content" wx:if="{{activeTab === 'migration'}}">
-      <view class="section-title">数据迁移到云开发</view>
-      
-      <!-- 云函数测试 -->
-      <view class="migration-section">
-        <view class="import-title">1. 云函数连接测试</view>
-        <view class="import-desc">测试云函数是否正常工作</view>
-        
-        <view class="action-buttons">
-          <button class="btn btn-primary" bindtap="testCloudFunction">测试云函数连接</button>
-        </view>
-      </view>
-      
-      <!-- 数据迁移 -->
-      <view class="migration-section">
-        <view class="import-title">2. 执行数据迁移</view>
-        <view class="import-desc">将本地mock数据迁移到云开发数据库</view>
-        
-        <view class="import-status" wx:if="{{migrationStatus}}">
-          <text class="{{migrationSuccess ? 'success' : 'error'}}">{{migrationStatus}}</text>
-        </view>
-        
-        <view class="action-buttons">
-          <button class="btn btn-warning" bindtap="executeMigration" disabled="{{migrationRunning}}">
-            {{migrationRunning ? '迁移中...' : '执行数据迁移'}}
-          </button>
-        </view>
-      </view>
-
-      <!-- 视频URL迁移 -->
-      <view class="migration-section">
-        <view class="import-title">3. 视频URL迁移</view>
-        <view class="import-desc">将视频URL迁移到云存储路径</view>
-        
-        <view class="action-buttons">
-          <button class="btn btn-success" bindtap="goToVideoMigration">
-            打开视频迁移管理
-          </button>
-        </view>
-      </view>
-
-      <!-- 使用说明 -->
-      <view class="migration-section">
-        <view class="import-title">使用说明</view>
-        <view class="instructions">
-          <text>1. 首先点击"测试云函数连接"确保云函数正常</text>
-          <text>2. 确保在云开发控制台创建了 categories 和 products 集合</text>
-          <text>3. 点击"执行数据迁移"开始迁移数据</text>
-          <text>4. 迁移完成后可以在云开发控制台查看数据</text>
-        </view>
-      </view>
-    </view>
-    
     <!-- 图片预览和上传确认 -->
     <view class="upload-preview" wx:if="{{tempImages.length > 0}}">
       <view class="preview-title">图片预览</view>
@@ -370,48 +534,5 @@
       </view>
     </view>
     
-    <!-- 工具标签页 -->
-    <view class="tab-content" wx:if="{{activeTab === 'tools'}}">
-      <view class="section-title">系统工具</view>
-      
-      <!-- 数据库修复工具 -->
-      <view class="tool-section">
-        <view class="tool-card">
-          <view class="tool-header">
-            <view class="tool-title">数据库URL修复</view>
-            <view class="tool-desc">修复数据库中的云存储URL格式错误</view>
-          </view>
-          <view class="tool-actions">
-            <button class="btn btn-primary" bindtap="goToFixDatabase">打开修复工具</button>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 视频迁移工具 -->
-      <view class="tool-section">
-        <view class="tool-card">
-          <view class="tool-header">
-            <view class="tool-title">视频迁移管理</view>
-            <view class="tool-desc">管理视频文件的云存储迁移</view>
-          </view>
-          <view class="tool-actions">
-            <button class="btn btn-primary" bindtap="goToVideoMigration">打开迁移工具</button>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 云存储测试工具 -->
-      <view class="tool-section">
-        <view class="tool-card">
-          <view class="tool-header">
-            <view class="tool-title">云存储测试</view>
-            <view class="tool-desc">测试云存储视频播放功能</view>
-          </view>
-          <view class="tool-actions">
-            <button class="btn btn-primary" bindtap="goToCloudVideoTest">打开测试工具</button>
-          </view>
-        </view>
-      </view>
-    </view>
-  </view>
+  </scroll-view>
 </view> 

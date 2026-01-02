@@ -15,6 +15,7 @@ Page({
       name: '',
       brief: '',
       images: [],
+      detailImages: [], // 详情图数组（不包含主图）
       params: [],
       features: [], // Requirements 3.5: 产品特点
       // 🆕 产品参数字段
@@ -105,42 +106,43 @@ Page({
       
       if (result) {
         console.log('云数据库产品数据:', result);
+        console.log('产品图片数组:', result.images);
+        console.log('产品imageUrls数组:', result.imageUrls);
+        console.log('产品详情图数组:', result.detailImages);
         
-        // 🆕 数据已经在productData中处理完成，直接使用
+        // 🔧 修复：计算详情图（如果云函数没有返回detailImages，从images中排除第一张）
+        let detailImages = [];
+        if (result.detailImages && result.detailImages.length > 0) {
+          detailImages = result.detailImages;
+        } else if (result.images && result.images.length > 1) {
+          // 如果没有单独的detailImages，从images中排除第一张（主图）
+          detailImages = result.images.slice(1);
+        }
+        
+        // 🔧 修复：检查是否有真正的产品特点（排除视频类型）
+        const features = result.features || [];
+        const hasRealFeatures = features.some(item => 
+          item.title && 
+          !item.video && 
+          item.title.indexOf('视频') === -1
+        );
+        
+        // 🔧 修复：直接使用 productData 返回的数据，不再重新构建
         const product = {
-          id: result._id,
-          _id: result._id,
-          name: result.name || '',
-          brief: result.brief || result.description || '',
-          // 🔧 修复：使用正确的图片数组
-          images: result.images || [],
-          imageUrls: result.imageUrls || [], // 🔧 修复：使用正确的 imageUrls 字段
-          detailImages: [],
-          params: result.params || [],
-          features: result.features || [],
-          price: result.price,
-          originalPrice: result.originalPrice, // Requirements 3.6: 原价
-          categoryId: result.categoryId,
-          // 🆕 使用已处理的视频数据
-          videos: result.videos || [],
-          // 🆕 产品参数字段
-          size: result.size || '',
-          weight: result.weight || '',
-          color: result.color || '',
-          applicationScenario: result.applicationScenario || ''
+          ...result,
+          // 确保 images 数组有值（用于轮播图，包含主图和详情图）
+          images: result.images && result.images.length > 0 ? result.images : 
+                  (result.imageUrls && result.imageUrls.length > 0 ? result.imageUrls : []),
+          // 详情图数组（只包含详情图，不包含主图）
+          detailImages: detailImages,
+          // 是否有真正的产品特点（用于控制显示/隐藏）
+          hasRealFeatures: hasRealFeatures
         };
         
-        console.log('转换后的产品数据:', product);
-        console.log('产品ID:', product.id);
-        console.log('产品名称:', product.name);
-        console.log('product.images:', product.images);
-        console.log('product.videos:', product.videos);
-        console.log('🔧 产品参数信息:', {
-          size: product.size,
-          weight: product.weight,
-          color: product.color,
-          applicationScenario: product.applicationScenario
-        });
+        console.log('最终产品数据:', product);
+        console.log('最终图片数组:', product.images);
+        console.log('最终详情图数组:', product.detailImages);
+        console.log('是否有真正的产品特点:', product.hasRealFeatures);
         
         // 🆕 提取产品视频（视频URL已经是临时URL）
         const productVideos = this.extractProductVideos(product);
@@ -148,6 +150,13 @@ Page({
         this.setData({
           product: product,
           productVideos: productVideos
+        }, () => {
+          // setData 回调，确认数据已更新
+          console.log('✅ setData 完成，验证数据:');
+          console.log('- product.images:', this.data.product.images);
+          console.log('- product.images.length:', this.data.product.images ? this.data.product.images.length : 0);
+          console.log('- product.detailImages:', this.data.product.detailImages);
+          console.log('- product.detailImages.length:', this.data.product.detailImages ? this.data.product.detailImages.length : 0);
         });
         
         console.log('云数据库产品数据设置完成');
@@ -365,6 +374,42 @@ Page({
     };
   },
 
+  /**
+   * 点击分类标签，跳转到分类页面并切换到对应分类
+   * Requirements 1.3, 2.1, 3.1: 从商品详情页点击分类可以跳转到分类页面并切换到对应分类
+   */
+  onCategoryTap: function() {
+    const product = this.data.product;
+    const categoryId = product.categoryId;
+    const categoryName = product.categoryName || product.category;
+    
+    if (!categoryId) {
+      console.log('[ProductDetail] 无法跳转：分类ID不存在');
+      wx.showToast({
+        title: '分类信息不存在',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    const app = getApp();
+    
+    // 设置全局分类切换请求
+    // Requirements 1.3: 设置 categorySwitchRequest 全局状态
+    app.globalData.categorySwitchRequest = {
+      pending: true,
+      targetCategoryId: categoryId,
+      targetCategoryName: categoryName
+    };
+    
+    console.log('[ProductDetail] 设置分类切换请求:', categoryName, categoryId);
+    
+    // Requirements 3.1: 使用 wx.switchTab 导航到分类页面
+    wx.switchTab({
+      url: '/pages/category/category'
+    });
+  },
+
   // 显示客服微信二维码
   showContactQRCode: function(e) {
     // 安全地阻止事件冒泡
@@ -387,6 +432,13 @@ Page({
   },
 
   // 自定义轮播控制方法
+  
+  // swiper 变化事件
+  onSwiperChange: function(e) {
+    this.setData({
+      currentImageIndex: e.detail.current
+    });
+  },
   
   // 切换到指定图片
   switchToImage: function(e) {
@@ -437,9 +489,12 @@ Page({
     const url = e.currentTarget.dataset.url;
     const index = parseInt(e.currentTarget.dataset.index);
     
+    // 使用详情图数组进行预览
+    const detailImages = this.data.product.detailImages || this.data.product.images || [];
+    
     wx.previewImage({
       current: url,
-      urls: this.data.product.images,
+      urls: detailImages,
       success: () => {
         console.log('预览详情图片成功:', url);
       },

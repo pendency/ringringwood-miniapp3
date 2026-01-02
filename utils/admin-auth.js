@@ -9,8 +9,8 @@ const AdminAuth = class {
     adminPhones: [
       '138****8888'
     ],
-    // 验证码（开发环境使用简单验证码）
-    validAuthCodes: ['121380', '123456', '000000'],
+    // 验证码（正式版）
+    validAuthCodes: ['12138'],
     // 手势密码序列：下 → 左下 → 右下 → 左下 → 右下
     requiredGesture: ['bottom', 'left-bottom', 'right-bottom', 'left-bottom', 'right-bottom']
   };
@@ -171,12 +171,12 @@ const AdminAuth = class {
     return new Promise((resolve) => {
       wx.showModal({
         title: '设备验证',
-        content: '检测到新设备，请输入管理员验证码（开发环境可使用：123456）',
+        content: '检测到新设备，请输入管理员验证码',
         editable: true,
-        placeholderText: '请输入6位验证码',
+        placeholderText: '请输入验证码',
         success: async (res) => {
           if (res.confirm) {
-            console.log('用户输入验证码:', res.content);
+            console.log('用户输入验证码');
             if (this.validateAuthCode(res.content)) {
               // 验证成功，添加设备到授权列表
               try {
@@ -188,7 +188,7 @@ const AdminAuth = class {
                 resolve({ success: false, error: '设备授权失败: ' + error.message });
               }
             } else {
-              console.error('验证码无效:', res.content);
+              console.error('验证码无效');
               resolve({ success: false, error: '验证码错误' });
             }
           } else {
@@ -221,16 +221,8 @@ const AdminAuth = class {
     // 去除换行符和空格
     const cleanCode = code.replace(/[\n\r\s]/g, '').trim();
 
-    // 开发环境下，允许使用 123456 或 000000
-    if (this.isDevelopment()) {
-      if (cleanCode === '123456' || cleanCode === '000000') {
-        console.log('开发环境：使用测试验证码');
-        return true;
-      }
-    }
-
     const isValid = this.adminConfig.validAuthCodes.includes(cleanCode);
-    console.log('验证码验证结果:', isValid, '输入:', cleanCode);
+    console.log('验证码验证结果:', isValid);
     return isValid;
   }
 
@@ -293,7 +285,7 @@ const AdminAuth = class {
   static getGestureConfig() {
     return {
       requiredSequence: this.adminConfig.requiredGesture,
-      description: '请按顺序点击：下 → 左下 → 右下 → 左下 → 右下'
+      description: '请输入手势密码'
     };
   }
 

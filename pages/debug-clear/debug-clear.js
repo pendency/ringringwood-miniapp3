@@ -1,6 +1,6 @@
 // debug-clear.js - 图片加载调试工具
 const productData = require('../../utils/productData.js');
-const mockData = require('../../utils/mock-data.js');
+// 注意：已移除 mock-data.js 依赖，数据库是唯一数据源
 
 Page({
   data: {
@@ -201,20 +201,14 @@ Page({
     try {
       this.addLog('📋 检查分类数据加载...');
       
-      // 先尝试从 productData 获取分类
+      // 从云数据库获取分类（数据库是唯一数据源）
       let categories = null;
       try {
         categories = await productData.getCategories();
         this.addLog('✅ 使用 productData.getCategories() 成功');
       } catch (error) {
-        this.addLog(`⚠️ productData.getCategories() 失败: ${error.message}`);
-        // 备用方案：使用 mock 数据
-        try {
-          categories = await mockData.getCategoryList();
-          this.addLog('✅ 使用 mockData.getCategoryList() 成功');
-        } catch (mockError) {
-          this.addLog(`❌ mockData.getCategoryList() 也失败: ${mockError.message}`);
-        }
+        this.addLog(`❌ productData.getCategories() 失败: ${error.message}`);
+        this.addLog('💡 请检查云函数是否已部署，网络是否正常');
       }
       
       if (categories && categories.length > 0) {
@@ -235,11 +229,13 @@ Page({
         let products = null;
         try {
           products = await productData.getProductsByCategory(firstCategory._id);
+          if (products && products.products) {
+            products = products.products; // 解构返回的对象
+          }
         } catch (error) {
-          this.addLog(`⚠️ 云数据获取失败，尝试 mock 数据: ${error.message}`);
-          // 备用方案：直接使用 mock 产品数据
-          const mockProducts = await mockData.getProductList();
-          products = mockProducts.filter(p => p.categoryId === firstCategory._id);
+          this.addLog(`❌ 云数据获取失败: ${error.message}`);
+          this.addLog('💡 请检查云函数是否已部署，网络是否正常');
+          products = [];
         }
         
         if (products && products.length > 0) {

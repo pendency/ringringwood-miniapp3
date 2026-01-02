@@ -1,6 +1,8 @@
 // category.js
 // Requirements: 2.2, 2.3, 2.4 - 分类产品筛选和分页
+// Feature: category-filter-search - 筛选和搜索功能
 const productData = require('../../utils/productData.js');
+const productFilter = require('../../utils/productFilter.js');
 
 Page({
   data: {
@@ -16,9 +18,440 @@ Page({
     totalProducts: 0, // 总产品数
     hasMoreProducts: false, // 是否有更多产品 - Requirements 2.3
     currentPage: 1, // 当前页码 - Requirements 2.3
-    pageSize: 10, // 每页显示的产品数量 - Requirements 2.3 (改为合理的分页大小)
-    scrollIntoView: '' // 用于scroll-view的scroll-into-view属性
+    pageSize: 100, // 每页显示的产品数量 - 增大到100以显示所有产品
+    scrollIntoView: '', // 用于scroll-view的scroll-into-view属性
+    isFirstLoad: true, // 是否首次加载 - Requirements 1.1, 2.4
+    lastActiveTab: 0, // 上次选中的分类索引（用于刷新后恢复）- Requirements 2.4
+    
+    // ========== 筛选和搜索相关字段 - Feature: category-filter-search ==========
+    // Requirements: 1.1, 2.1, 3.1, 4.1
+    
+    // 搜索相关 - Requirements: 4.1
+    searchKeyword: '',           // 当前搜索关键词
+    searchInputValue: '',        // 输入框中的值（用于防抖）
+    
+    // 筛选面板 - Requirements: 1.1
+    showFilterPanel: false,      // 筛选面板是否展开
+    
+    // 长度筛选 - Requirements: 2.1
+    lengthFilter: null,          // 当前选中的长度范围 { min, max, label }
+    lengthOptions: [             // 长度筛选选项
+      { min: null, max: null, label: '不限' },
+      { min: 0, max: 150, label: '150cm以下' },
+      { min: 150, max: 180, label: '150-180cm' },
+      { min: 180, max: 210, label: '180-210cm' },
+      { min: 210, max: 240, label: '210-240cm' },
+      { min: 240, max: 270, label: '240-270cm' },
+      { min: 270, max: 300, label: '270-300cm' },
+      { min: 300, max: 350, label: '300-350cm' },
+      { min: 350, max: 400, label: '350-400cm' },
+      { min: 400, max: 500, label: '400-500cm' },
+      { min: 500, max: Infinity, label: '500cm以上' }
+    ],
+    
+    // 宽度筛选 - Requirements: 3.1
+    widthFilter: null,           // 当前选中的宽度范围 { min, max, label }
+    widthOptions: [              // 宽度筛选选项
+      { min: null, max: null, label: '不限' },
+      { min: 0, max: 60, label: '60cm以下' },
+      { min: 60, max: 80, label: '60-80cm' },
+      { min: 80, max: 100, label: '80-100cm' },
+      { min: 100, max: 120, label: '100-120cm' },
+      { min: 120, max: 140, label: '120-140cm' },
+      { min: 140, max: Infinity, label: '140cm以上' }
+    ],
+    
+    // 排序相关 - Requirements: 7.1, 7.2
+    sortOption: 'default',       // 当前排序方式
+    showSortDropdown: false,     // 排序下拉菜单是否展开
+    sortOptions: [               // 排序选项
+      { value: 'default', label: '默认排序' },
+      { value: 'newest', label: '最新优先' },
+      { value: 'priceAsc', label: '价格升序' },
+      { value: 'priceDesc', label: '价格降序' }
+    ],
+    
+    // 筛选结果 - Requirements: 5.1
+    filteredProducts: [],        // 筛选后的产品列表
+    hasActiveFilters: false,     // 是否有激活的筛选条件
+    activeFilterCount: 0,        // 激活的筛选条件数量 - Requirements: 5.2
+    
+    // 原始产品列表（用于筛选）
+    allProducts: []              // 当前分类的所有产品（筛选前的完整列表）
+    // ========== 筛选和搜索相关字段结束 ==========
   },
+  
+  // ========== 搜索和筛选方法 - Feature: category-filter-search ==========
+  
+  // 搜索防抖定时器
+  _searchDebounceTimer: null,
+  
+  /**
+   * 搜索输入事件处理 - Requirements: 4.2, 4.3
+   * 实现防抖机制，延迟300ms执行筛选
+   */
+  onSearchInput: function(e) {
+    const value = e.detail.value;
+    console.log('[Search] 输入变化:', value);
+    
+    // 更新输入框显示值
+    this.setData({
+      searchInputValue: value
+    });
+    
+    // 清除之前的防抖定时器
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    
+    // 设置新的防抖定时器，300ms后执行搜索
+    this._searchDebounceTimer = setTimeout(() => {
+      this.executeSearch(value);
+    }, 300);
+  },
+  
+  /**
+   * 搜索确认事件（键盘搜索按钮）
+   */
+  onSearchConfirm: function(e) {
+    const value = e.detail.value;
+    console.log('[Search] 确认搜索:', value);
+    
+    // 清除防抖定时器，立即执行搜索
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    
+    this.executeSearch(value);
+  },
+  
+  /**
+   * 执行搜索 - Requirements: 4.2, 4.6
+   * 大小写不敏感搜索
+   */
+  executeSearch: function(keyword) {
+    console.log('[Search] 执行搜索:', keyword);
+    
+    // 更新搜索关键词
+    this.setData({
+      searchKeyword: keyword.trim()
+    });
+    
+    // 应用所有筛选条件
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 清除搜索 - Requirements: 4.4, 4.5
+   */
+  clearSearch: function() {
+    console.log('[Search] 清除搜索');
+    
+    // 清除防抖定时器
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    
+    // 清除搜索关键词
+    this.setData({
+      searchKeyword: '',
+      searchInputValue: ''
+    });
+    
+    // 重新应用筛选（不含搜索）
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 切换筛选面板显示 - Requirements: 1.2, 1.3
+   * 点击筛选按钮时展开/收起筛选面板
+   */
+  toggleFilterPanel: function() {
+    console.log('[Filter] 切换筛选面板，当前状态:', this.data.showFilterPanel);
+    
+    this.setData({
+      showFilterPanel: !this.data.showFilterPanel,
+      showSortDropdown: false // 关闭排序下拉菜单
+    });
+    
+    console.log('[Filter] 筛选面板新状态:', this.data.showFilterPanel);
+  },
+  
+  /**
+   * 切换排序下拉菜单显示 - Requirements: 7.1
+   */
+  toggleSortDropdown: function() {
+    console.log('[Sort] 切换排序下拉菜单，当前状态:', this.data.showSortDropdown);
+    
+    this.setData({
+      showSortDropdown: !this.data.showSortDropdown,
+      showFilterPanel: false // 关闭筛选面板
+    });
+    
+    console.log('[Sort] 排序下拉菜单新状态:', this.data.showSortDropdown);
+  },
+  
+  /**
+   * 选择排序方式 - Requirements: 7.3, 7.4, 7.5, 7.6
+   */
+  selectSortOption: function(e) {
+    const value = e.currentTarget.dataset.value;
+    console.log('[Sort] 选择排序方式:', value);
+    
+    this.setData({
+      sortOption: value,
+      showSortDropdown: false
+    });
+    
+    // 重新应用筛选和排序
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 获取当前排序选项的标签
+   */
+  getCurrentSortLabel: function() {
+    const option = this.data.sortOptions.find(opt => opt.value === this.data.sortOption);
+    return option ? option.label : '默认排序';
+  },
+  
+  /**
+   * 选择长度筛选范围 - Requirements: 1.6, 2.2, 2.3, 2.4
+   * 单选模式：只能选择一个长度范围
+   * "不限" 选项会清除长度筛选
+   */
+  selectLengthFilter: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const selectedOption = this.data.lengthOptions[index];
+    
+    console.log('[Filter] 选择长度筛选:', selectedOption);
+    
+    // 如果选择 "不限" 选项，清除长度筛选
+    if (selectedOption.min === null) {
+      console.log('[Filter] 选择不限，清除长度筛选');
+      this.setData({
+        lengthFilter: null
+      });
+    } else if (this.data.lengthFilter && this.data.lengthFilter.label === selectedOption.label) {
+      // 如果点击已选中的选项，则取消选择（回到不限）
+      console.log('[Filter] 取消长度筛选');
+      this.setData({
+        lengthFilter: null
+      });
+    } else {
+      // 选择新的选项（单选模式）
+      this.setData({
+        lengthFilter: selectedOption
+      });
+    }
+    
+    // 应用所有筛选条件
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 选择宽度筛选范围 - Requirements: 1.6, 3.2, 3.3, 3.4
+   * 单选模式：只能选择一个宽度范围
+   * "不限" 选项会清除宽度筛选
+   */
+  selectWidthFilter: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const selectedOption = this.data.widthOptions[index];
+    
+    console.log('[Filter] 选择宽度筛选:', selectedOption);
+    
+    // 如果选择 "不限" 选项，清除宽度筛选
+    if (selectedOption.min === null) {
+      console.log('[Filter] 选择不限，清除宽度筛选');
+      this.setData({
+        widthFilter: null
+      });
+    } else if (this.data.widthFilter && this.data.widthFilter.label === selectedOption.label) {
+      // 如果点击已选中的选项，则取消选择（回到不限）
+      console.log('[Filter] 取消宽度筛选');
+      this.setData({
+        widthFilter: null
+      });
+    } else {
+      // 选择新的选项（单选模式）
+      this.setData({
+        widthFilter: selectedOption
+      });
+    }
+    
+    // 应用所有筛选条件
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 清除长度筛选 - Requirements: 2.3
+   */
+  clearLengthFilter: function() {
+    console.log('[Filter] 清除长度筛选');
+    
+    this.setData({
+      lengthFilter: null
+    });
+    
+    // 重新应用筛选
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 清除宽度筛选 - Requirements: 3.3
+   */
+  clearWidthFilter: function() {
+    console.log('[Filter] 清除宽度筛选');
+    
+    this.setData({
+      widthFilter: null
+    });
+    
+    // 重新应用筛选
+    this.applyAllFilters();
+  },
+  
+  /**
+   * 清除所有筛选条件 - Requirements: 5.3
+   */
+  clearAllFilters: function() {
+    console.log('[Filter] 清除所有筛选');
+    
+    // 清除防抖定时器
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    
+    // 重置所有筛选和排序状态
+    this.setData({
+      searchKeyword: '',
+      searchInputValue: '',
+      lengthFilter: null,
+      widthFilter: null,
+      sortOption: 'default',
+      showFilterPanel: false,
+      showSortDropdown: false,
+      hasActiveFilters: false,
+      filteredProducts: []
+    });
+    
+    console.log('[Filter] 所有筛选已清除');
+  },
+  
+  /**
+   * 应用所有筛选条件 - Requirements: 5.1, 5.2, 7.8
+   * 组合搜索关键词、长度筛选、宽度筛选，然后应用排序
+   * 使用 allProducts 作为筛选源，确保筛选基于完整的产品列表
+   */
+  applyAllFilters: function() {
+    console.log('[Filter] 应用所有筛选条件');
+    
+    const { searchKeyword, lengthFilter, widthFilter, sortOption, allProducts, products } = this.data;
+    
+    // 使用 allProducts 作为筛选源，如果 allProducts 为空则使用 products
+    // Requirements: 5.1 - 组合筛选应基于原始产品列表
+    const sourceProducts = (allProducts && allProducts.length > 0) ? allProducts : products;
+    
+    console.log('[Filter] 筛选源产品数量:', sourceProducts.length);
+    
+    // 🆕 调试：打印前3个产品的尺寸信息
+    if (sourceProducts.length > 0) {
+      console.log('[Filter] 产品尺寸数据示例:');
+      sourceProducts.slice(0, 3).forEach((p, i) => {
+        const sizeFromProduct = productFilter.getSizeFromProduct ? productFilter.getSizeFromProduct(p) : null;
+        console.log(`[Filter] 产品${i+1}: name=${p.name}, size=${p.size}, params=${JSON.stringify(p.params)}, 提取的尺寸=${sizeFromProduct}`);
+      });
+    }
+    
+    // 构建筛选条件对象
+    const filters = {};
+    
+    if (searchKeyword && searchKeyword.trim()) {
+      filters.keyword = searchKeyword.trim();
+    }
+    
+    // 只有当 lengthFilter 不是 "不限" 时才添加筛选条件
+    if (lengthFilter && lengthFilter.min !== null) {
+      filters.lengthRange = {
+        min: lengthFilter.min,
+        max: lengthFilter.max
+      };
+    }
+    
+    // 只有当 widthFilter 不是 "不限" 时才添加筛选条件
+    if (widthFilter && widthFilter.min !== null) {
+      filters.widthRange = {
+        min: widthFilter.min,
+        max: widthFilter.max
+      };
+    }
+    
+    // 检查是否有激活的筛选条件（不包括 "不限" 选项）
+    const hasFilters = productFilter.hasActiveFilters(filters);
+    
+    // 检查是否有非默认排序
+    const hasNonDefaultSort = sortOption && sortOption !== 'default';
+    
+    console.log('[Filter] 筛选条件:', filters);
+    console.log('[Filter] 是否有激活筛选:', hasFilters);
+    console.log('[Sort] 当前排序方式:', sortOption);
+    
+    // Requirements: 5.2 - 更新筛选状态指示器
+    const activeFilterCount = this.getActiveFilterCount();
+    
+    if (hasFilters || hasNonDefaultSort) {
+      // 应用筛选 - Requirements: 5.1
+      let resultProducts = hasFilters 
+        ? productFilter.applyFilters(sourceProducts, filters)
+        : [...sourceProducts];
+      
+      // 应用排序 - Requirements: 7.8 (排序在筛选后应用)
+      if (hasNonDefaultSort) {
+        resultProducts = productFilter.sortProducts(resultProducts, sortOption);
+        console.log('[Sort] 排序后产品数量:', resultProducts.length);
+      }
+      
+      console.log('[Filter] 最终结果数量:', resultProducts.length);
+      console.log('[Filter] 激活的筛选条件数量:', activeFilterCount);
+      
+      this.setData({
+        filteredProducts: resultProducts,
+        hasActiveFilters: hasFilters || hasNonDefaultSort,
+        activeFilterCount: activeFilterCount
+      });
+    } else {
+      // 无筛选条件且默认排序，清空筛选结果
+      this.setData({
+        filteredProducts: [],
+        hasActiveFilters: false,
+        activeFilterCount: 0
+      });
+    }
+  },
+  
+  /**
+   * 获取当前激活的筛选条件数量 - Requirements: 5.2
+   * 用于更新筛选状态指示器
+   */
+  getActiveFilterCount: function() {
+    let count = 0;
+    
+    if (this.data.searchKeyword && this.data.searchKeyword.trim()) {
+      count++;
+    }
+    
+    if (this.data.lengthFilter) {
+      count++;
+    }
+    
+    if (this.data.widthFilter) {
+      count++;
+    }
+    
+    return count;
+  },
+  
+  // ========== 搜索和筛选方法结束 ==========
   
   onLoad: function() {
     // 获取系统信息
@@ -28,10 +461,12 @@ Page({
     const navBarHeight = 44; // 固定导航栏高度
     const contentPaddingTop = statusBarHeight + navBarHeight;
     
+    // 确保首次加载标识为 true - Requirements 3.1
     this.setData({
       statusBarHeight: statusBarHeight,
       navBarHeight: navBarHeight,
-      contentPaddingTop: contentPaddingTop
+      contentPaddingTop: contentPaddingTop,
+      isFirstLoad: true
     });
     
     // 加载分类数据
@@ -39,33 +474,51 @@ Page({
   },
   
   // 页面显示时检查是否有指定分类
+  // Requirements: 1.1, 1.2, 1.4, 2.2, 2.3, 3.2 - 优化刷新策略
   onShow: function() {
-    console.log('[Category] onShow 触发');
+    console.log('[Category] onShow 触发, isFirstLoad:', this.data.isFirstLoad);
+    
+    // 重置可能遮挡页面的弹窗状态
+    if (this.data.showMenu) {
+      console.log('[Category] 检测到侧边菜单未关闭，重置中...');
+      this.setData({ showMenu: false });
+    }
     
     // 获取全局数据中的分类类型和ID
     const app = getApp();
-    if (app && app.globalData && app.globalData.eventChannel && 
-        (app.globalData.eventChannel.categoryType || app.globalData.eventChannel.categoryId)) {
+    const hasEventChannel = app && app.globalData && app.globalData.eventChannel;
+    const hasCategorySwitchRequest = hasEventChannel && 
+        (app.globalData.eventChannel.categoryType || app.globalData.eventChannel.categoryId);
+    
+    if (hasCategorySwitchRequest) {
+      // 有分类切换请求，处理跳转
       const categoryType = app.globalData.eventChannel.categoryType;
-      const categoryId = app.globalData.eventChannel.categoryId; // 🆕 获取分类ID
-      console.log('[Category] 接收到分类类型:', categoryType, '分类ID:', categoryId);
+      const categoryId = app.globalData.eventChannel.categoryId;
+      console.log('[Category] 接收到分类切换请求，分类类型:', categoryType, '分类ID:', categoryId);
       
-      // 清除全局数据，避免下次进入页面仍然跳转
+      // Requirements 2.3: 处理后立即清除全局数据，避免下次进入页面仍然跳转
       app.globalData.eventChannel.categoryType = null;
       app.globalData.eventChannel.categoryId = null;
+      console.log('[Category] 已清除全局分类切换请求数据');
       
-      // 🆕 保存要切换的分类信息（优先使用ID）
+      // 保存要切换的分类信息（优先使用ID）
       this.pendingSwitchCategoryId = categoryId;
       this.pendingSwitchCategory = categoryType;
       
-      // 🆕 强制刷新分类数据，确保获取最新的分类名称和排序
+      // 强制刷新分类数据，确保获取最新的分类名称和排序
       console.log('[Category] 强制刷新分类数据（有指定分类）');
       this.loadCategoriesWithRefresh();
+    } else if (this.data.isFirstLoad) {
+      // Requirements 3.1: 首次加载时加载分类数据
+      console.log('[Category] 首次加载，加载分类数据');
+      // 首次加载已在 onLoad 中处理，这里标记为非首次加载
+      this.setData({ isFirstLoad: false });
     } else {
-      console.log('[Category] 未接收到分类类型，强制刷新分类数据');
-      // 每次显示页面时强制刷新分类数据，确保获取最新排序
-      // 使用 refreshCategories 方法，它会先清除缓存再获取数据
-      this.loadCategoriesWithRefresh();
+      // Requirements 1.1, 1.2, 1.4, 2.2, 3.2: 从详情页返回时，保持当前状态不变
+      // 不触发数据刷新，保持 activeTab 不变
+      console.log('[Category] 从详情页返回或无分类切换请求，保持当前状态');
+      console.log('[Category] 当前 activeTab:', this.data.activeTab);
+      // 不调用 loadCategoriesWithRefresh()，保持当前分类状态
     }
   },
   
@@ -217,6 +670,12 @@ Page({
       if (this.data.categories.length > 0) {
         this.loadProductsByCategory(0);
       }
+      
+      // 首次加载完成后，标记为非首次加载 - Requirements 3.1
+      if (this.data.isFirstLoad) {
+        this.setData({ isFirstLoad: false });
+        console.log('[Category] 首次加载完成，isFirstLoad 设置为 false');
+      }
     } catch (error) {
       console.error('加载分类失败', error);
       this.setData({ loading: false });
@@ -231,9 +690,15 @@ Page({
   },
 
   // 强制刷新分类数据（清除缓存后重新加载）
+  // Requirements 2.4, 3.3, 3.4: 刷新前保存当前分类索引，刷新后恢复
   async loadCategoriesWithRefresh() {
     // 设置加载状态标记，避免重复加载
     this.loadingCategories = true;
+    
+    // Requirements 2.4: 在刷新前保存当前 activeTab 到 lastActiveTab
+    const savedActiveTab = this.data.activeTab;
+    this.setData({ lastActiveTab: savedActiveTab });
+    console.log('[Category] 保存当前分类索引:', savedActiveTab);
     
     try {
       this.setData({ loading: true });
@@ -280,14 +745,28 @@ Page({
         return; // 已尝试切换到指定分类，不需要加载默认分类
       }
       
-      // 如果有分类且没有切换到指定分类，默认选中第一个
+      // Requirements 3.4: 如果有分类且没有切换到指定分类，恢复到之前的分类索引
       if (this.data.categories.length > 0) {
+        // Requirements 2.4, 3.4: 恢复到 lastActiveTab，处理索引越界的边界情况
+        let targetIndex = this.data.lastActiveTab;
+        
+        // 边界情况处理：如果保存的索引超出当前分类数组长度，回退到索引 0
+        if (targetIndex < 0 || targetIndex >= this.data.categories.length) {
+          console.log('[Category] lastActiveTab 索引越界，回退到 0:', targetIndex);
+          targetIndex = 0;
+        }
+        
+        console.log('[Category] 刷新完成，恢复到分类索引:', targetIndex);
+        
         // 同时刷新产品缓存
-        await productData.refreshCategoryProducts(this.data.categories[0]._id, {
+        await productData.refreshCategoryProducts(this.data.categories[targetIndex]._id, {
           limit: this.data.pageSize,
           offset: 0
         });
-        this.loadProductsByCategory(0);
+        
+        // 更新 activeTab 并加载产品
+        this.setData({ activeTab: targetIndex });
+        this.loadProductsByCategory(targetIndex);
       }
     } catch (error) {
       console.error('刷新分类失败', error);
@@ -305,6 +784,7 @@ Page({
   // 根据分类加载产品 - Requirements 2.2, 2.4
   // 当用户选择某个分类时，筛选并显示该分类下的所有产品
   // 当用户切换分类时，清空当前列表并加载新分类产品
+  // Feature: category-filter-search - 保存原始产品列表用于筛选
   async loadProductsByCategory(categoryIndex) {
     try {
       console.log('loadProductsByCategory 开始，索引:', categoryIndex);
@@ -323,11 +803,13 @@ Page({
       console.log('开始加载分类产品:', category.name, '分类ID:', category._id);
 
       // Requirements 2.4: 切换分类时清空当前列表
+      // Feature: category-filter-search - 同时清空 allProducts
       this.setData({
         loading: true,
         loadingMore: false,
         currentPage: 1,
-        products: [] // 清空当前列表
+        products: [], // 清空当前列表
+        allProducts: [] // 清空原始产品列表
       });
 
       // 检查分类ID是否有效
@@ -336,6 +818,7 @@ Page({
         this.setData({
           loading: false,
           products: [],
+          allProducts: [],
           totalProducts: 0,
           hasMoreProducts: false
         });
@@ -373,13 +856,18 @@ Page({
           console.log('备用方法成功获取到产品:', fallbackResult.products.length);
           
           // 更新产品数据，同时保持activeTab的值
+          // Feature: category-filter-search - 保存到 allProducts
           this.setData({
             products: fallbackResult.products,
+            allProducts: fallbackResult.products, // 保存原始产品列表
             activeTab: categoryIndex,
             totalProducts: fallbackResult.total || fallbackResult.products.length,
             hasMoreProducts: false,
             loading: false
           });
+          
+          // Feature: category-filter-search - 加载完成后应用筛选
+          this.applyAllFilters();
           
           console.log('使用备用数据加载完成，当前activeTab:', categoryIndex);
           return;
@@ -392,13 +880,20 @@ Page({
       const hasMore = loadedCount < totalCount;
       
       // 更新产品数据，同时保持activeTab的值
+      // Feature: category-filter-search - 保存到 allProducts 用于筛选
+      const loadedProducts = result.products || [];
       this.setData({
-        products: result.products || [],
+        products: loadedProducts,
+        allProducts: loadedProducts, // Requirements: 5.1 - 保存原始产品列表
         activeTab: categoryIndex,
         totalProducts: totalCount,
         hasMoreProducts: hasMore,
         loading: false
       });
+      
+      // Feature: category-filter-search - 加载完成后应用当前筛选条件
+      // Requirements: 5.1 - 确保筛选状态在产品加载后生效
+      this.applyAllFilters();
       
       console.log('分类页加载完成，当前activeTab:', categoryIndex);
       console.log(`加载${category.name}分类产品: ${loadedCount}/${totalCount}, 还有更多: ${hasMore}`);
@@ -529,6 +1024,15 @@ Page({
     }
 
     console.log('切换到分类:', targetCategory?.name, '索引:', numIndex);
+    
+    // Feature: category-filter-search - Requirements: 5.4
+    // 筛选状态（searchKeyword, lengthFilter, widthFilter）在分类切换时保持不变
+    // loadProductsByCategory 会在加载完成后调用 applyAllFilters() 应用当前筛选状态
+    console.log('[Filter] 分类切换时保持筛选状态:', {
+      searchKeyword: this.data.searchKeyword,
+      lengthFilter: this.data.lengthFilter ? this.data.lengthFilter.label : null,
+      widthFilter: this.data.widthFilter ? this.data.widthFilter.label : null
+    });
 
     // 先更新activeTab，确保UI立即响应
     this.setData({
@@ -538,7 +1042,7 @@ Page({
     // 滚动到对应分类
     this.scrollToCategoryItem(numIndex);
 
-    // 加载产品数据
+    // 加载产品数据 - 会自动应用当前筛选状态
     this.loadProductsByCategory(numIndex);
   },
   
@@ -692,97 +1196,10 @@ Page({
     });
   },
   
-  // 尝试使用备用方法获取产品
+  // 备用方法获取产品（已废弃，数据库是唯一数据源）
   async tryFallbackProductLoad(category) {
-    try {
-      console.log('尝试使用备用方法获取产品，分类:', category.name);
-      
-      // 🆕 直接使用默认产品（避免使用包含本地路径的 mock 数据）
-      console.log('使用默认产品数据');
-      
-      // 🆕 根据分类名称选择默认产品（使用云端URL）
-      const defaultProducts = {
-          '原木经典': [
-            {
-              _id: 'wood1',
-              name: '黑檀升降桌',
-              description: '精选优质实木，展现自然纹理之美',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/wood/wood1.jpeg']
-            },
-            {
-              _id: 'wood2',
-              name: '黑檀水波纹',
-              description: '精选优质实木，展现自然纹理之美',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/wood/wood2.jpeg']
-            }
-          ],
-          '树脂美学': [
-            {
-              _id: 'resin1',
-              name: '冰晶玉石树脂桌面',
-              description: '创新树脂工艺，打造晶莹剔透质感',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/resin/resin1.jpeg']
-            }
-          ],
-          '玩趣设计': [
-            {
-              _id: 'design1',
-              name: '复古波点桌',
-              description: '独特的创意设计，为空间增添艺术气息',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/design/design1.jpeg']
-            }
-          ],
-          '高定专属': [
-            {
-              _id: 'custom1',
-              name: '海浪亮光款',
-              description: '精心定制的独特作品，每一件都是艺术品',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/custom/custom1.jpeg']
-            },
-            {
-              _id: 'custom2',
-              name: '南美胡桃木海浪款',
-              description: '精心定制的独特作品，每一件都是艺术品',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/custom/custom2.jpeg']
-            }
-          ],
-          '桌架专区': [
-            {
-              _id: 'frame1',
-              name: '现代简约金属桌架',
-              description: '多样化桌架选择，稳固实用美观',
-              price: '联系销售',
-              imageUrls: ['cloud://cloud1-7gm53wok768268c9.636c-cloud1-7gm53wok768268c9-1369425968/products/images/frame/frame1.jpeg']
-            }
-          ]
-        };
-      
-      const matchedProducts = defaultProducts[category.name] || [];
-      console.log('默认产品数量:', matchedProducts.length);
-      
-      // 添加isFavorite属性
-      const favorites = wx.getStorageSync('favorites') || [];
-      const favoriteIds = favorites.map(item => item._id);
-      
-      const productsWithFavorite = matchedProducts.map(item => ({
-        ...item,
-        isFavorite: favoriteIds.includes(item._id)
-      }));
-      
-      return {
-        products: productsWithFavorite,
-        total: productsWithFavorite.length
-      };
-    } catch (error) {
-      console.error('备用方法获取产品失败:', error);
-      return { products: [], total: 0 };
-    }
+    console.log('备用方法已废弃，分类:', category.name, '- 请确保数据库中有产品数据');
+    return { products: [], total: 0 };
   },
 
   // 🆕 图片加载失败处理
@@ -1078,6 +1495,24 @@ Page({
     });
     wx.switchTab({
       url: '/pages/contact/contact'
+    });
+  },
+
+  // 跳转到客户案例页面 - Requirements: 1.4
+  navigateToCases: function() {
+    console.log('[Category] 跳转到客户案例页面');
+    wx.navigateTo({
+      url: '/pages/customer-cases/customer-cases',
+      success: function() {
+        console.log('[Category] 成功跳转到客户案例页面');
+      },
+      fail: function(error) {
+        console.error('[Category] 跳转到客户案例页面失败:', error);
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'none'
+        });
+      }
     });
   },
 

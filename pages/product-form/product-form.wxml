@@ -146,6 +146,34 @@
             </view>
           </view>
         </view>
+
+        <!-- 产品视频 -->
+        <view class="form-group">
+          <view class="form-label">产品视频（最多1个）</view>
+          <view class="video-upload-area">
+            <!-- 已上传的视频 -->
+            <view class="video-preview" wx:if="{{formData.videoUrl}}">
+              <video 
+                src="{{formData.videoUrl}}" 
+                class="preview-video"
+                controls="{{false}}"
+                show-center-play-btn="{{true}}"
+                object-fit="cover"
+              />
+              <view class="video-remove" catchtap="removeVideo">×</view>
+            </view>
+            <!-- 上传按钮 -->
+            <view 
+              class="video-placeholder" 
+              wx:if="{{!formData.videoUrl}}"
+              bindtap="chooseVideo"
+            >
+              <text class="placeholder-icon">🎬</text>
+              <text class="placeholder-text">上传视频</text>
+            </view>
+          </view>
+          <view class="form-hint">支持mp4格式，最长60秒</view>
+        </view>
       </view>
 
       <!-- 产品特点 -->

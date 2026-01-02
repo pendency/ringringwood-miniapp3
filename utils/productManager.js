@@ -4,7 +4,7 @@
  * Requirements: 7.2, 7.3, 7.4
  */
 
-const mockData = require('./mock-data.js');
+// 注意：已移除 mock-data.js 依赖，数据库是唯一数据源
 
 class ProductManager {
   constructor() {
@@ -79,50 +79,15 @@ class ProductManager {
   }
 
   /**
-   * 从本地数据获取产品
+   * 从本地数据获取产品（备用方法，返回空数据）
+   * 注意：数据库是唯一数据源，此方法仅在云函数完全不可用时返回空结果
    * @private
    */
   async _getProductsFromLocal(options) {
-    const {
-      categoryId,
-      page = 1,
-      pageSize = 10,
-      isHot,
-      isNew,
-      isRecommended
-    } = options;
-
-    let products = [...mockData.mockProducts];
-
-    // 分类筛选
-    if (categoryId) {
-      products = products.filter(p => p.categoryId === categoryId);
-    }
-
-    // isHot 筛选
-    if (isHot !== undefined) {
-      products = products.filter(p => !!p.isHot === isHot);
-    }
-
-    // isNew 筛选
-    if (isNew !== undefined) {
-      products = products.filter(p => !!p.isNew === isNew);
-    }
-
-    // isRecommended 筛选
-    if (isRecommended !== undefined) {
-      products = products.filter(p => !!p.isRecommended === isRecommended);
-    }
-
-    const total = products.length;
-
-    // 分页处理
-    const skip = (page - 1) * pageSize;
-    products = products.slice(skip, skip + pageSize);
-
+    console.warn('[ProductManager] 云函数不可用，返回空数据。请检查云函数部署状态。');
     return {
-      products,
-      total
+      products: [],
+      total: 0
     };
   }
 
@@ -154,9 +119,9 @@ class ProductManager {
       console.error('[ProductManager] getProductById 云函数失败:', error);
     }
 
-    // 回退到本地数据
-    const product = mockData.mockProducts.find(p => p._id === id);
-    return product || null;
+    // 云函数失败时返回null
+    console.warn('[ProductManager] 云函数不可用，无法获取产品详情');
+    return null;
   }
 
   /**
@@ -179,7 +144,9 @@ class ProductManager {
       console.error('[ProductManager] getCategories 云函数失败:', error);
     }
 
-    return [...mockData.mockCategories];
+    // 云函数失败时返回空数组
+    console.warn('[ProductManager] 云函数不可用，无法获取分类列表');
+    return [];
   }
 
   /**
@@ -202,7 +169,9 @@ class ProductManager {
       console.error('[ProductManager] getBanners 云函数失败:', error);
     }
 
-    return [...mockData.mockBanners];
+    // 云函数失败时返回空数组
+    console.warn('[ProductManager] 云函数不可用，无法获取轮播图');
+    return [];
   }
 
   /**

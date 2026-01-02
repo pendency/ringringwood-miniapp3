@@ -129,22 +129,38 @@
 - [x] 9. 检查点 - 确保页面功能测试通过
   - 确保所有测试通过，如有问题请询问用户
 
-- [x] 10. 集成和优化
-  - [x] 10.1 集成到现有管理后台
+- [x] 10. 实现产品视频上传功能
+  - [x] 10.1 在产品表单页面添加视频上传UI
+    - 在 `pages/product-form/product-form.wxml` 添加视频预览和上传按钮
+    - 在 `pages/product-form/product-form.wxss` 添加视频上传样式
+    - _Requirements: 18.1, 18.4_
+  - [x] 10.2 实现视频上传逻辑
+    - 在 `pages/product-form/product-form.js` 添加 `videoUrl` 字段到 formData
+    - 实现 `chooseVideo()` 方法选择和上传视频
+    - 实现 `removeVideo()` 方法删除视频
+    - 视频命名格式: `products/videos/{category}/{productId}_video.mp4`
+    - _Requirements: 18.2, 18.3, 18.5, 18.6, 18.7_
+  - [x] 10.3 更新产品管理模块支持视频
+    - 在 `utils/productAdminManager.js` 的 `addProduct` 和 `updateProduct` 中添加 `videoUrl` 字段
+    - 在 `cloudfunctions/productManager/index.js` 的 `getProducts` 返回中添加 `videoUrl` 字段
+    - _Requirements: 18.8_
+
+- [x] 11. 集成和优化
+  - [x] 11.1 集成到现有管理后台
     - 在 admin 页面添加分类管理和产品管理入口
     - 实现页面导航
     - _Requirements: 1.1, 5.1_
-  - [x] 10.2 实现错误处理
+  - [x] 11.2 实现错误处理
     - 添加数据加载失败提示
     - 添加操作失败提示
     - 添加网络错误处理
     - _Requirements: 1.3, 10.4_
-  - [x] 10.3 实现权限验证
+  - [x] 11.3 实现权限验证
     - 验证管理员身份
     - 未授权时跳转到首页
     - _Requirements: 管理员权限_
 
-- [x] 11. 最终检查点 - 确保所有测试通过
+- [x] 12. 最终检查点 - 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户
 
 ## 备注

@@ -33,15 +33,15 @@
     </view>
   </view>
   
-  <!-- 内容区域 -->
-  <view class="content-container" style="padding-top: {{statusBarHeight + navBarHeight}}px;">
+  <!-- 内容区域 - 使用scroll-view支持Skyline渲染器滚动 -->
+  <scroll-view class="content-container" scroll-y type="list" style="padding-top: {{statusBarHeight + navBarHeight}}px;">
     <!-- 轮播图 - Requirements: 1.1, 1.3 -->
     <view class="swiper-container">
       <swiper class="banner" indicator-dots="{{true}}" autoplay="{{true}}" interval="{{3000}}" duration="{{500}}" circular="{{true}}">
       <block wx:for="{{banners}}" wx:key="id">
         <swiper-item>
-          <image src="{{item.imageUrl}}" class="banner-image" mode="aspectFill" lazy-load="{{true}}" bindtap="navigateToBannerCategory" data-category="{{item.title}}" data-linktype="{{item.linkType}}" data-linkvalue="{{item.linkValue}}" data-productid="{{item.productId || item._id}}"></image>
-          <view class="banner-content" bindtap="navigateToBannerCategory" data-category="{{item.title}}" data-linktype="{{item.linkType}}" data-linkvalue="{{item.linkValue}}" data-productid="{{item.productId || item._id}}">
+          <image src="{{item.imageUrl}}" class="banner-image" mode="aspectFill" lazy-load="{{true}}" bindtap="navigateToBannerCategory" data-category="{{item.title}}" data-linktype="{{item.linkType}}" data-productid="{{item.productId}}" data-categoryid="{{item.categoryId}}"></image>
+          <view class="banner-content" bindtap="navigateToBannerCategory" data-category="{{item.title}}" data-linktype="{{item.linkType}}" data-productid="{{item.productId}}" data-categoryid="{{item.categoryId}}">
             <view class="banner-title">{{item.title}}</view>
             <view class="banner-subtitle" wx:if="{{item.subtitle}}">{{item.subtitle}}</view>
           </view>
@@ -68,7 +68,9 @@
       <view class="product-list">
         <block wx:for="{{hotProducts}}" wx:key="_id">
           <view class="product-item" bindtap="navigateToDetail" data-id="{{item._id}}">
-            <image class="product-image" src="{{item.imageUrls[0]}}" mode="aspectFill" lazy-load="{{true}}" binderror="onImageError" data-index="{{index}}" data-type="hot"></image>
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.imageUrls[0]}}" mode="aspectFill" lazy-load="{{true}}" binderror="onImageError" data-index="{{index}}" data-type="hot"></image>
+            </view>
             <view class="product-info">
               <text class="product-name">{{item.name}}</text>
             </view>
@@ -116,7 +118,7 @@
     
     <!-- 页脚品牌标语 -->
     <view class="footer-slogan">年轮是树的故事，环环是家的史诗。</view>
-  </view>
+  </scroll-view>
 
   <!-- 管理员手势输入界面 -->
   <view class="admin-gesture-overlay" wx:if="{{showGestureInput}}">
